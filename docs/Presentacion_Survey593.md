@@ -7,8 +7,8 @@
 ## Diapositiva 1: Portada
 **Título:** Survey 593 - Arquitectura y Plataforma de Monetización de Datos
 **Subtítulo:** Proyecto #1 del Ecosistema Kolab
-**Autores:** Equipo de Arquitectura y Desarrollo (Tu nombre y el equipo)
-**Fecha:** (Insertar Fecha)
+**Autores:** Equipo de Arquitectura y Desarrollo Fernando Cajias , Jordy Santillan , Dennis Villasis, Dennis Toapanta, Calixto Carrera, Antony Cayambe, Oscar Males, Antony Jarrin
+**Fecha:** 11 septiembre de 2026
 
 ---
 

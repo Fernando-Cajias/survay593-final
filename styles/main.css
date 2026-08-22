@@ -467,6 +467,45 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 .no-select{user-select:none}
 .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
 
+/* ====== Dashboard Studio & Drag & Drop ====== */
+.studio-container { display: flex; gap: 20px; min-height: calc(100vh - 120px); align-items: flex-start; }
+.studio-toolbox { width: 300px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; position: sticky; top: 20px; flex-shrink: 0; box-shadow: var(--shadow); }
+.toolbox-title { font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.08em; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.toolbox-grid { display: flex; flex-direction: column; gap: 10px; }
+.draggable-widget-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--bg-alt); border: 1.5px dashed var(--border); border-radius: var(--radius); cursor: grab; transition: all var(--transition-fast); user-select: none; }
+.draggable-widget-item:hover { border-color: var(--primary); background: var(--primary-50); transform: translateX(4px); box-shadow: var(--shadow-glow-sm); }
+.draggable-widget-item:active { cursor: grabbing; opacity: 0.6; }
+.draggable-widget-item .widget-icon { font-size: 1.35rem; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--surface); border-radius: var(--radius); }
+.draggable-widget-item .widget-info { flex: 1; min-width: 0; }
+.draggable-widget-item .widget-name { font-size: 0.8125rem; font-weight: 600; }
+.draggable-widget-item .widget-desc { font-size: 0.6875rem; color: var(--text-muted); }
+
+.studio-canvas-wrapper { flex: 1; min-width: 0; }
+.studio-canvas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; background: var(--surface); padding: 16px 24px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+.studio-canvas-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; min-height: 450px; padding: 24px; border-radius: var(--radius-lg); background: rgba(15, 23, 42, 0.6); border: 2px dashed var(--border); transition: border-color var(--transition-fast); }
+.studio-canvas-grid.drag-over { border-color: var(--primary); background: var(--primary-50); }
+.studio-empty-canvas { grid-column: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; text-align: center; color: var(--text-muted); }
+
+.canvas-widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; position: relative; transition: all var(--transition); display: flex; flex-direction: column; animation: scaleIn 0.3s ease; }
+.canvas-widget.col-span-1 { grid-column: span 1; }
+.canvas-widget.col-span-2 { grid-column: span 2; }
+.canvas-widget:hover { border-color: var(--border-hover); box-shadow: var(--shadow-lg); }
+.canvas-widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.canvas-widget-title { font-size: 0.9375rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.canvas-widget-actions { display: flex; align-items: center; gap: 6px; }
+.canvas-widget-body { flex: 1; min-height: 240px; display: flex; flex-direction: column; justify-content: center; position: relative; }
+
+/* Filter Bar in Live Dashboard */
+.live-filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: var(--surface); padding: 14px 20px; border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 20px; }
+.filter-chip { padding: 6px 14px; border-radius: var(--radius-full); font-size: 0.8125rem; font-weight: 600; background: var(--bg-alt); border: 1px solid var(--border); cursor: pointer; transition: all var(--transition-fast); }
+.filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: var(--shadow-glow-sm); }
+
+@media (max-width: 1024px) {
+  .studio-container { flex-direction: column; }
+  .studio-toolbox { width: 100%; position: static; }
+  .canvas-widget.col-span-1, .canvas-widget.col-span-2 { grid-column: span 2; }
+}
+
 /* ====== Print ====== */
 @media print{
   .sidebar,.toast-container,.mobile-menu-btn{display:none !important}

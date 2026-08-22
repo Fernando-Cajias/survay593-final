@@ -39,12 +39,13 @@ El sistema autogenerará una base de datos local (seed) la primera vez que lo ab
 | 🏢 **Empresa (Provider)** | `admin@textilandina.ec` | `demo123` |
 | 🔧 **Administrador (Kolab)** | `admin@kolab.ec` | `admin123` |
 
-## 🛠️ Tecnologías del Prototipo
+## 🛠️ Tecnologías y Módulos del Prototipo
+- **🎨 No-Code BI Studio:** Motor visual con Drag & Drop nativo para que las empresas diseñen sus propios Dashboards personalizados (Gráficos de Pastel, Radar multidimensional, Barras, Polar y Tarjetas KPI) vinculados directamente a la base de datos sin programar.
 - **Frontend UI:** HTML5 semántico y CSS3 puro (variables CSS, Glassmorphism, CSS Grid/Flexbox).
 - **Lógica de Negocio:** JavaScript ES6+ (Patrón Módulo, SPA Hash-router).
-- **Gráficos:** [Chart.js](https://www.chartjs.org/) (cargado vía CDN).
+- **Visualización Analítica:** [Chart.js 4.x](https://www.chartjs.org/) (Pie, Radar, PolarArea, Bar, Line).
 - **Tipografía:** [Inter](https://fonts.google.com/specimen/Inter) de Google Fonts.
-- **Estado de Base de Datos:** `window.localStorage` simulando una BDD Relacional.
+- **Estado de Base de Datos:** `window.localStorage` simulando un motor de Base de Datos Relacional y NoSQL (`custom_dashboards`).
 
 ## 👥 Equipo
 - Arquitectura y Desarrollo del Ecosistema Kolab.

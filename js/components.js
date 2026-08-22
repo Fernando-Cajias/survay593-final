@@ -89,6 +89,10 @@ Survey593.Sidebar = (() => {
           { id: 'prov-create', icon: '✏️', label: 'Crear Encuesta', route: '#/provider/create' },
           { id: 'prov-campaigns', icon: '📋', label: 'Mis Campañas', route: '#/provider/campaigns' },
         ]},
+        { title: 'No-Code BI Studio', items: [
+          { id: 'prov-studio', icon: '🎨', label: 'Dashboard Studio', route: '#/provider/studio' },
+          { id: 'prov-dashboards', icon: '📂', label: 'Mis Dashboards', route: '#/provider/dashboards' },
+        ]},
         { title: 'Análisis', items: [
           { id: 'prov-results', icon: '📈', label: 'Resultados', route: '#/provider/results' },
           { id: 'prov-billing', icon: '💳', label: 'Facturación', route: '#/provider/billing' },
@@ -218,6 +222,70 @@ Survey593.Charts = (() => {
     });
   }
 
+  function pie(canvasId, labels, data) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return null;
+    return new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: palette.slice(0, labels.length), borderColor: '#1E293B', borderWidth: 2, hoverOffset: 8 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', padding: 14, font: { family: 'Inter', size: 11 }, usePointStyle: true, pointStyle: 'circle' } } } }
+    });
+  }
+
+  function polarArea(canvasId, labels, data) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return null;
+    return new Chart(ctx, {
+      type: 'polarArea',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: palette.slice(0, labels.length).map(c => c + 'B3'), borderColor: '#1E293B', borderWidth: 2 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { r: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { backdropColor: 'transparent', color: '#94A3B8' } } },
+        plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', padding: 12, font: { family: 'Inter', size: 11 }, usePointStyle: true } } }
+      }
+    });
+  }
+
+  function radar(canvasId, labels, data, label = 'Nivel') {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return null;
+    return new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          label,
+          data,
+          backgroundColor: 'rgba(13, 148, 136, 0.25)',
+          borderColor: '#0D9488',
+          borderWidth: 2,
+          pointBackgroundColor: '#14B8A6',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#0D9488'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          r: {
+            angleLines: { color: 'rgba(255,255,255,0.08)' },
+            grid: { color: 'rgba(255,255,255,0.08)' },
+            pointLabels: { color: '#CBD5E1', font: { family: 'Inter', size: 11 } },
+            ticks: { backdropColor: 'transparent', color: '#64748B', beginAtZero: true }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
   function line(canvasId, labels, datasets) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return null;
@@ -262,7 +330,7 @@ Survey593.Charts = (() => {
     };
   }
 
-  return { bar, doughnut, line, horizontalBar, palette };
+  return { bar, doughnut, pie, polarArea, radar, line, horizontalBar, palette };
 })();
 
 // ====== Modal Helper ======

@@ -303,3 +303,35 @@ graph TD
 - **Consecuencias:**
   - *Pros:* La base de datos maestra (Master) se libera para enfocarse 100% en escrituras (respuestas a encuestas y pagos de billetera), asegurando alta disponibilidad durante picos.
   - *Contras:* Incrementa el costo mensual de infraestructura y añade complejidad de "consistencia eventual" (el dashboard de un cliente podría tardar 1 o 2 segundos en mostrar la respuesta más reciente). Aceptamos este *trade-off* como beneficioso para la escala comercial.
+
+### ADR-003: Motor No-Code de Visualización Dinámica (Dashboard Studio Drag & Drop)
+- **Estado:** Aceptado.
+- **Contexto:** Los clientes empresariales y analistas políticos requieren tableros personalizados según su industria (salud, moda, política), variando el tipo de gráfico (Pastel, Radar/Ángulos, Barras, KPIs) y segmentaciones sin depender del equipo de desarrollo para cada cambio.
+- **Decisión:** Implementar un motor de diseño declarativo con API nativa de Drag & Drop y esquema JSON (`custom_dashboards`) que vincula automáticamente componentes visuales a cualquier pregunta de la base de datos relacional.
+- **Consecuencias:**
+  - *Pros:* Empodera al cliente (Self-service Analytics / No-Code BI), reduce tickets de soporte técnico al 0% para personalización de reportes, y otorga una ventaja competitiva masiva frente a software de encuestas tradicional.
+  - *Contras:* Requiere validar la compatibilidad de tipos de preguntas con tipos de gráficos en el cliente (ej. un campo de texto abierto no puede mapearse directamente a un gráfico de pastel).
+
+---
+
+## 8. Estrategia de Calidad y Pruebas (QA & Testing)
+
+Para garantizar la robustez del sistema financiero y la recolección de datos, se define el siguiente stack de aseguramiento de calidad (QA):
+
+| Tipo de Prueba | Herramienta / Software | Objetivo y Alcance |
+|----------------|------------------------|---------------------|
+| **Pruebas End-to-End (E2E)** | **Playwright** / **Cypress** | Automatización visual del flujo completo: registro, arrastre de widgets en el Dashboard Studio, respuesta de encuestas y solicitud de retiro de fondos en el wallet. Graba video y captura pantallas de fallos. |
+| **Pruebas Unitarias & Integración** | **Vitest** / **Jest** + **Testing Library** | Validación de cálculos matemáticos en el wallet (balances, fees de Kolab), cálculo de promedios Likert y validación de esquemas de datos. |
+| **Pruebas de Contrato & API** | **Postman** / **Bruno** / **Thunder Client** | Validación automatizada de los contratos OpenAPI/Swagger, códigos de estado HTTP (200, 400, 401, 403, 500) y tiempos de respuesta. |
+| **Pruebas de Carga & Estrés** | **k6 (Grafana k6)** | Simulación de picos masivos de tráfico (ej. 5,000 Doers enviando respuestas concurrentemente) para verificar que el auto-scaling de AWS Fargate responda en menos de 2 minutos. |
+
+---
+
+## 9. Hoja de Ruta Tecnológica: Transición a Framework de Producción
+
+Para la fase de producción con desarrolladores novatos / juniors, se seleccionó la siguiente arquitectura optimizada para curva de aprendizaje rápida y alta productividad:
+
+- **Frontend:** **React + Vite + Tailwind CSS + Shadcn UI** (o **Open SaaS / Wasp**).
+  - *¿Por qué NO Angular?* Angular tiene una curva de aprendizaje muy pronunciada (RxJS, Inyección de dependencias compleja, TypeScript estricto) que abruma a programadores principiantes. React con hooks funcionales (`useState`, `useEffect`) es mucho más intuitivo y cuenta con el mayor ecosistema para Drag & Drop (`dnd-kit`, `react-grid-layout`).
+- **Base de Datos & Backend:** **Supabase (PostgreSQL Cloud)** o **Firebase Firestore**.
+  - *Recomendación Principal:* **Supabase (PostgreSQL)**, ya que provee Autenticación, Base de datos relacional con integridad transaccional para wallets, y APIs REST/Realtime generadas automáticamente sin necesidad de programar un backend complejo desde cero.

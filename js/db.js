@@ -11,6 +11,25 @@ Survey593.DB = (() => {
   // ====== Core CRUD ======
   function getAll(collection) {
     const db = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (collection === 'custom_dashboards' && !db.custom_dashboards) {
+      db.custom_dashboards = [
+        {
+          id: 'dash_1',
+          providerId: 'prov_1',
+          title: 'Tablero Estratégico de Moda & Consumo',
+          description: 'Dashboard personalizado diseñado con widgets de Pastel, Radar multidimensional y métricas de gasto.',
+          createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+          widgets: [
+            { id: 'w_101', type: 'kpi', title: 'Muestra Total Recolectada', surveyId: 'surv_1', colSpan: 1, config: { metric: 'total_responses', label: 'Encuestados Verificados' } },
+            { id: 'w_102', type: 'kpi', title: 'Índice de Sostenibilidad', surveyId: 'surv_1', questionId: 'q1_2', colSpan: 1, config: { metric: 'avg_likert', label: 'Promedio sobre 5.0' } },
+            { id: 'w_103', type: 'pie', title: 'Preferencia de Estilo de Ropa', surveyId: 'surv_1', questionId: 'q1_1', colSpan: 1, config: {} },
+            { id: 'w_104', type: 'radar', title: 'Perfil de Consumo & Sostenibilidad (Radar)', surveyId: 'surv_1', questionId: 'q1_2', colSpan: 1, config: { label: 'Sensibilidad Sostenible' } },
+            { id: 'w_105', type: 'bar', title: 'Segmentación de Gasto Mensual ($)', surveyId: 'surv_1', questionId: 'q1_3', colSpan: 2, config: {} }
+          ]
+        }
+      ];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    }
     return db[collection] || [];
   }
 
@@ -193,6 +212,63 @@ Survey593.DB = (() => {
       { id:'notif_2', userId:'doer_1', type:'survey', title:'Nueva encuesta disponible', message:'Hábitos de Consumo Digital está disponible. ¡Gana $3.00!', read:false, createdAt:new Date(Date.now() - 7200000).toISOString() },
       { id:'notif_3', userId:'prov_1', type:'milestone', title:'Hito alcanzado', message:'Tu encuesta "Moda Urbana" ha alcanzado 10 respuestas.', read:true, createdAt:new Date(Date.now() - 86400000).toISOString() }
     );
+
+    // --- Custom Dashboards (No-Code BI Studio) ---
+    db.custom_dashboards = [
+      {
+        id: 'dash_1',
+        providerId: 'prov_1',
+        title: 'Tablero Estratégico de Moda & Consumo',
+        description: 'Dashboard personalizado diseñado con widgets de Pastel, Radar multidimensional y métricas de gasto.',
+        createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+        widgets: [
+          {
+            id: 'w_101',
+            type: 'kpi',
+            title: 'Muestra Total Recolectada',
+            surveyId: 'surv_1',
+            colSpan: 1,
+            config: { metric: 'total_responses', label: 'Encuestados Verificados (Quito/Gye)' }
+          },
+          {
+            id: 'w_102',
+            type: 'kpi',
+            title: 'Índice de Sostenibilidad',
+            surveyId: 'surv_1',
+            questionId: 'q1_2',
+            colSpan: 1,
+            config: { metric: 'avg_likert', label: 'Promedio sobre 5.0' }
+          },
+          {
+            id: 'w_103',
+            type: 'pie',
+            title: 'Preferencia de Estilo de Ropa',
+            surveyId: 'surv_1',
+            questionId: 'q1_1',
+            colSpan: 1,
+            config: {}
+          },
+          {
+            id: 'w_104',
+            type: 'radar',
+            title: 'Perfil de Consumo & Sostenibilidad (Radar)',
+            surveyId: 'surv_1',
+            questionId: 'q1_2',
+            colSpan: 1,
+            config: { label: 'Sensibilidad Sostenible' }
+          },
+          {
+            id: 'w_105',
+            type: 'bar',
+            title: 'Segmentación de Gasto Mensual ($)',
+            surveyId: 'surv_1',
+            questionId: 'q1_3',
+            colSpan: 2,
+            config: {}
+          }
+        ]
+      }
+    ];
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     console.log('✅ Survey 593 DB seeded successfully');

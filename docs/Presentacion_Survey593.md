@@ -25,8 +25,15 @@
 
 ---
 
-## Diapositiva 4: Modelo de Negocio (¿Cómo ganamos todos?)
-- 🏢 **Providers (Empresas/Campañas):** Ganan al obtener datos 100% reales, altamente segmentados y resultados con gráficos en tiempo real, a una fracción del costo tradicional.
+## Diapositiva 4: La Gran Innovación (No-Code BI Studio Drag & Drop)
+- **Más allá de un simple dashboard estático:** Los clientes empresariales no quieren reportes rígidos prediseñados.
+- **Empoderamiento Total:** Integramos un **Constructor Visual No-Code** donde el cliente arrastra widgets (Gráficos de Pastel, Radar/Ángulos, Barras, Polar y Tarjetas KPI) a un lienzo interactivo.
+- **Data Binding Automático:** El usuario selecciona la encuesta, la pregunta y el tipo de cálculo, vinculándose inmediatamente con la base de datos sin escribir una sola línea de código.
+
+---
+
+## Diapositiva 5: Modelo de Negocio (¿Cómo ganamos todos?)
+- 🏢 **Providers (Empresas/Campañas):** Ganan al obtener datos 100% reales y diseñar sus propios dashboards a medida para juntas directivas.
 - 👤 **Doers (Usuarios):** Ganan dinero depositado en sus wallets por cada encuesta respondida honestamente. ¡Su opinión tiene valor financiero!
 - ⚙️ **Dueños / Kolab:** Ganan a través de un **fee de transacción** (margen retenido entre lo que paga la empresa y lo que se deposita al usuario) y al enriquecer la base de datos central del ecosistema.
 
@@ -34,7 +41,7 @@
 
 ---
 
-## Diapositiva 5: Retos Arquitectónicos y NFRs
+## Diapositiva 6: Retos Arquitectónicos y NFRs
 **¿Cuáles fueron los retos principales al diseñar esta plataforma financiera/datos?**
 1. **Seguridad / Anti-fraude:** Evitar que bots o usuarios múltiples vacíen el presupuesto de las empresas.
    - *Solución:* Integración de proveedor KYC (Know Your Customer) y motor de calidad de datos ARCO+.
@@ -43,9 +50,9 @@
 
 ---
 
-## Diapositiva 6: Arquitectura de Alto Nivel (Modelo C4)
+## Diapositiva 7: Arquitectura de Alto Nivel (Modelo C4)
 *(Insertar la imagen del Diagrama de Contexto C1 o Contenedores C2 que está en el DDA)*
-- **Plataforma Core (SPA + API + DB):** Donde viven los 3 paneles (Doer, Provider, Admin).
+- **Plataforma Core (SPA + API + DB):** Donde viven los 3 paneles (Doer, Provider, Admin) y el nuevo No-Code Studio.
 - **Integraciones Clave:** 
   - *Stripe/Kushki* (Pagos).
   - *KYC Provider* (Validación de identidad).
@@ -53,32 +60,29 @@
 
 ---
 
-## Diapositiva 7: Infraestructura en la Nube (La Solución)
-*(Insertar Diagrama de Despliegue en AWS del DDA)*
+## Diapositiva 8: Infraestructura en la Nube & Decisiones (ADRs)
 - **Frontend SPA:** Alojado en Amazon S3 + CloudFront (Velocidad global, costo marginal).
-- **Backend API:** AWS Fargate (Serverless Containers). Nos permite auto-escalar cuando enviamos notificaciones push masivas, sin pagar servidores ociosos.
-- **Base de Datos (RDS PostgreSQL):** Asegura transacciones financieras ACID para las wallets de los usuarios.
-- **Redis (ElastiCache):** Acelera la entrega de resultados estadísticos a los dashboards de las empresas.
+- **Backend API:** AWS Fargate (Serverless Containers). Nos permite auto-escalar cuando enviamos notificaciones push masivas.
+- **Base de Datos (RDS PostgreSQL):** Transacciones financieras ACID para las wallets de los usuarios.
+- **ADR-003 (No-Code BI Engine):** Motor declarativo JSON para persistir y renderizar tableros personalizados al vuelo.
 
 ---
 
-## Diapositiva 8: Decisiones Clave (Trade-offs / ADRs)
-**Reto:** "Las miles de respuestas entrantes podrían bloquear el dashboard de lectura de las empresas."
-**Decisión Estratégica (ADR-002):** Implementar el patrón CQRS (separación de lectura y escritura) mediante una *Read Replica* en PostgreSQL.
-- **Lo que sacrificamos:** Consistencia estricta (los gráficos pueden tener 1 o 2 segundos de retraso).
-- **Lo que ganamos:** Escalabilidad comercial y 99.99% de disponibilidad en picos de tráfico extremo, garantizando la satisfacción del cliente empresarial.
+## Diapositiva 9: Estrategia de Calidad (QA) y Roadmap de Producción
+- **Plan de Pruebas (QA):**
+  - *E2E Automatizado:* **Playwright / Cypress** para simular visualmente flujos de encuestas y drag-and-drop.
+  - *Pruebas Unitarias:* **Vitest / Jest** para validación matemática de wallets y compensaciones.
+  - *Pruebas de Carga:* **k6** para simular 5,000 usuarios concurrentes.
+- **Framework para Producción (Ideal para Juniors):**
+  - **Frontend:** **React + Vite + Tailwind CSS** (Curva de aprendizaje suave, componentes modulares y gran ecosistema de Drag & Drop vs la complejidad de Angular).
+  - **Backend & BDD:** **Supabase (PostgreSQL Cloud)** (Autenticación lista, seguridad de base de datos relacional y APIs automáticas sin sobrecargar a desarrolladores novatos).
 
 ---
 
-## Diapositiva 9: Demo de la Plataforma
-- Arquitectura implementada en una SPA con ruteo local.
-- Panel de Encuestados, Panel de Empresas y Panel Administrativo (Kolab).
-- *(Mostrar en vivo o con capturas de pantalla la plataforma que ya se construyó en HTML/JS/CSS).*
-- Link al repositorio de GitHub para revisar el código fuente.
-
----
-
-## Diapositiva 10: Conclusión y Preguntas
-- Survey 593 no es solo una app; es infraestructura de datos monetizada.
-- Arquitectura Cloud-Native lista para escalar y libre de fraude.
+## Diapositiva 10: Demo en Vivo y Conclusión
+- **Demostración Práctica:**
+  - 1. Responder encuesta como Doer y recibir saldo en Wallet.
+  - 2. Abrir el **Dashboard Studio No-Code**, arrastrar widgets de Pastel y Radar, y vincularlos a datos reales.
+  - 3. Ver el Dashboard en Modo Presentación con filtros demográficos en vivo.
+- **Conclusión:** Survey 593 no es solo una app; es un motor de Business Intelligence y monetización de datos.
 - **¡Gracias! ¿Tienen alguna pregunta?**

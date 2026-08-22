@@ -31,7 +31,10 @@ Survey593.Provider = (() => {
       <div class="page">
         <div class="page-header">
           <div><h1 class="page-title">Dashboard Empresarial 📊</h1><p class="page-subtitle">${user.company || user.name} · ${user.industry || 'Empresa'}</p></div>
-          <a href="#/provider/create" class="btn btn-primary">✏️ Crear Encuesta</a>
+          <div class="flex gap-sm">
+            <a href="#/provider/studio" class="btn btn-secondary">🎨 No-Code BI Studio</a>
+            <a href="#/provider/create" class="btn btn-primary">✏️ Crear Encuesta</a>
+          </div>
         </div>
 
         <div class="grid grid-4">

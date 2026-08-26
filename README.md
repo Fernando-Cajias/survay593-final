@@ -47,5 +47,17 @@ El sistema autogenerará una base de datos local (seed) la primera vez que lo ab
 - **Tipografía:** [Inter](https://fonts.google.com/specimen/Inter) de Google Fonts.
 - **Estado de Base de Datos:** `window.localStorage` simulando un motor de Base de Datos Relacional y NoSQL (`custom_dashboards`).
 
-## 👥 Equipo
-- Arquitectura y Desarrollo del Ecosistema Kolab.
+## 👥 Equipo de Desarrollo y Arquitectura (Scrum Team)
+
+| Integrante | Semestre | Rol Scrum | Módulos Asignados |
+|------------|----------|-----------|-------------------|
+| **Fernando Cajías** | 5to Semestre | **Scrum Master & Lead Architect** | Router SPA (`js/app.js`), No-Code BI Studio Drag & Drop (`js/dashboard-studio.js`), DevOps & Git |
+| **Jordy Santillán** | 5to Semestre | **Data Architect & Backend Lead** | Capa BDD (`js/db.js`), Billetera / Wallet (`js/doer.js`), Esquema Relacional & ARCO+ |
+| **Dennis Toapanta** | 3er Semestre | **Frontend Dev & Lead QA** | Wizard Creación de Encuestas (`js/provider.js`), Chart.js (`js/components.js`), Plan QA |
+| **Óscar Males** | 1er Semestre | **Junior UI Developer** | Design System, Variables CSS, Glassmorphism & Responsive Design (`styles/main.css`) |
+| **Antony Cayambe** | 1er Semestre | **Junior Developer** | Módulo de Respuesta de Encuestas & Validación de Formularios (`js/doer.js`) |
+| **Antony Jarrín** | 1er Semestre | **Junior UX / Data Researcher** | Landing Page (`index.html`) & Banco de Datos de Demostración / Seed (`js/db.js`) |
+| **Dennis Villasis** | 1er Semestre | **Junior Developer** | Autenticación, Login/Registro & Verificación de Identidad KYC (`js/auth.js`) |
+| **Calixto Carrera** | 1er Semestre | **Junior Data & QA Analyst** | Exportación de Reportes CSV (`js/provider.js`), Calidad de Datos & Pruebas Manuales |
+
+📄 *Consulta el detalle completo de tareas y entregables en el [Plan Scrum del Equipo](./docs/Plan_Scrum_Equipo.md).*

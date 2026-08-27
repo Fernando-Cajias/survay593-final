@@ -9,26 +9,49 @@ En la carpeta `/docs` encontrarás los documentos requeridos para la defensa fin
 - [DDA_Survey593.md](./docs/DDA_Survey593.md): Documento de Diseño de Arquitectura (C4, DDD, NFRs, Cloud).
 - [Presentacion_Survey593.md](./docs/Presentacion_Survey593.md): Guion y estructura para las diapositivas de defensa.
 
-## 🚀 Cómo Ejecutar el Proyecto Localmente
+## 📁 Estructura del Proyecto
 
-El prototipo actual está diseñado como una **Single Page Application (SPA)** pura utilizando HTML5, CSS3 y JavaScript ES6+, con `localStorage` actuando como la base de datos temporal (con datos precargados para demostración). No requiere instalación de dependencias, Node.js ni bases de datos externas.
+El repositorio está organizado de forma modular para desacoplar el Frontend, el Backend y la documentación:
+
+```
+AUTOMATIZACION/
+├── frontend/               # Aplicación oficial en React 18 + Vite + Tailwind CSS
+│   ├── src/                # Componentes, Páginas, Contexts y Servicios
+│   ├── index.html          # Entry point Vite
+│   ├── package.json        # Dependencias (React, Tailwind, Lucide, Chart.js)
+│   ├── tailwind.config.js  # Design System tokens
+│   └── vite.config.js      # Configuración de Vite
+├── backend/                # Configuración de Backend, APIs y Supabase / PostgreSQL
+│   └── README.md           # Guía de arquitectura de base de datos
+├── docs/                   # Documentación de Arquitectura, DDA y Plan Scrum
+│   ├── DDA_Survey593.md    # Documento de Diseño Arquitectónico (C4, NFRs, Cloud)
+│   ├── Plan_Scrum_Equipo.md# Distribución de tareas para los 8 integrantes
+│   └── Presentacion_Survey593.md # Diapositivas de defensa
+└── prototype-vanilla/      # Prototipo inicial en HTML/CSS/JS para referencia rápida
+```
+
+## 🚀 Cómo Ejecutar el Frontend Oficial (React + Vite)
 
 ### Requisitos Previos
-- Un navegador web moderno (Google Chrome, Firefox, Edge o Safari).
-- (Opcional) Visual Studio Code con la extensión "Live Server" para recarga en vivo.
+- **Node.js:** v18 o superior (recomendado v20+)
+- **npm:** v9 o superior
 
 ### Pasos para ejecutar:
 1. Clona este repositorio en tu máquina local:
    ```bash
    git clone https://github.com/Fernando-Cajias/survay593-final.git
-   ```
-2. Entra a la carpeta del proyecto:
-   ```bash
    cd survay593-final
    ```
-3. Abre el archivo `index.html` en tu navegador.
-   - **Opción A (Rápida):** Haz doble clic en el archivo `index.html` desde tu explorador de archivos.
-   - **Opción B (Recomendada):** Si usas VS Code, haz clic derecho sobre `index.html` y selecciona **"Open with Live Server"**.
+2. Entra a la carpeta del frontend e instala dependencias (solo la primera vez):
+   ```bash
+   cd frontend
+   npm install
+   ```
+3. Inicia el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+4. Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
 
 ## 🔑 Credenciales de Demostración
 El sistema autogenerará una base de datos local (seed) la primera vez que lo abras. Usa los botones rápidos en la pantalla de "Iniciar Sesión" o las siguientes credenciales manuales para probar los distintos roles:

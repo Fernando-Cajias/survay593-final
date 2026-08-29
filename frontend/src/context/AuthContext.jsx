@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { INITIAL_USERS } from '../services/seedData';
 
 const AuthContext = createContext(null);
@@ -17,6 +18,47 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Load live users from Supabase on mount if configured
+  useEffect(() => {
+    async function loadSupabaseUsers() {
+      if (!isSupabaseConfigured) return;
+      try {
+        const { data, error } = await supabase.from('profiles').select('*');
+        if (!error && data && data.length > 0) {
+          const mappedUsers = data.map((u) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            password: u.password,
+            role: u.role,
+            company: u.company,
+            industry: u.industry,
+            age: u.age,
+            city: u.city,
+            gender: u.gender,
+            verified: u.verified,
+            balance: parseFloat(u.balance) || 0,
+            surveysCompleted: u.surveys_completed || 0,
+            streak: u.streak || 0,
+            avatarColor: u.avatar_color || '#0D9488',
+            createdAt: u.created_at,
+          }));
+          setUsers(mappedUsers);
+
+          // If current user is logged in, refresh their data
+          if (currentUser) {
+            const fresh = mappedUsers.find((u) => u.id === currentUser.id);
+            if (fresh) setCurrentUser(fresh);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not sync users from Supabase, using local state:', err);
+      }
+    }
+
+    loadSupabaseUsers();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
   }, [users]);
@@ -30,7 +72,9 @@ export const AuthProvider = ({ children }) => {
   }, [currentUser]);
 
   const login = (email, password) => {
-    const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    const user = users.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+    );
     if (user) {
       setCurrentUser(user);
       return { success: true, user };
@@ -47,7 +91,7 @@ export const AuthProvider = ({ children }) => {
     return { success: false };
   };
 
-  const register = (userData) => {
+  const register = async (userData) => {
     const exists = users.some((u) => u.email.toLowerCase() === userData.email.toLowerCase());
     if (exists) {
       return { success: false, message: 'El correo electrónico ya está registrado' };
@@ -66,6 +110,33 @@ export const AuthProvider = ({ children }) => {
 
     setUsers((prev) => [...prev, newUser]);
     setCurrentUser(newUser);
+
+    // Sync to Supabase in background
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').insert([
+          {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            password: newUser.password,
+            role: newUser.role,
+            company: newUser.company || null,
+            industry: newUser.industry || null,
+            city: newUser.city || 'Quito',
+            gender: newUser.gender || 'F',
+            verified: false,
+            balance: newUser.balance,
+            surveys_completed: 0,
+            streak: 0,
+            avatar_color: newUser.avatarColor,
+          },
+        ]);
+      } catch (err) {
+        console.warn('Error saving user to Supabase:', err);
+      }
+    }
+
     return { success: true, user: newUser };
   };
 
@@ -73,11 +144,32 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  const updateProfile = (updates) => {
+  const updateProfile = async (updates) => {
     if (!currentUser) return;
     const updated = { ...currentUser, ...updates };
     setCurrentUser(updated);
     setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+
+    // Sync to Supabase
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            name: updated.name,
+            city: updated.city,
+            age: updated.age,
+            gender: updated.gender,
+            verified: updated.verified,
+            balance: updated.balance,
+            surveys_completed: updated.surveysCompleted,
+            streak: updated.streak,
+          })
+          .eq('id', updated.id);
+      } catch (err) {
+        console.warn('Error updating profile in Supabase:', err);
+      }
+    }
   };
 
   return (

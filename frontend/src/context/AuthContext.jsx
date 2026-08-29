@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  // Load live users from Supabase on mount if configured
+  // Load live users from Supabase on mount
   useEffect(() => {
     async function loadSupabaseUsers() {
       if (!isSupabaseConfigured) return;
@@ -45,14 +45,13 @@ export const AuthProvider = ({ children }) => {
           }));
           setUsers(mappedUsers);
 
-          // If current user is logged in, refresh their data
           if (currentUser) {
             const fresh = mappedUsers.find((u) => u.id === currentUser.id);
             if (fresh) setCurrentUser(fresh);
           }
         }
       } catch (err) {
-        console.warn('Could not sync users from Supabase, using local state:', err);
+        console.warn('Could not sync users from Supabase:', err);
       }
     }
 
@@ -71,47 +70,110 @@ export const AuthProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  const login = (email, password) => {
-    const user = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
+  // Secure login validating email & password
+  const login = async (email, password) => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    // First check local state
+    let user = users.find((u) => u.email.toLowerCase() === cleanEmail && u.password === password);
+
+    // If not found in local cache, query Supabase in real time
+    if (!user && isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', cleanEmail)
+          .eq('password', password)
+          .single();
+
+        if (data && !error) {
+          user = {
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            role: data.role,
+            company: data.company,
+            industry: data.industry,
+            age: data.age,
+            city: data.city,
+            gender: data.gender,
+            verified: data.verified,
+            balance: parseFloat(data.balance) || 0,
+            surveysCompleted: data.surveys_completed || 0,
+            streak: data.streak || 0,
+            avatarColor: data.avatar_color || '#0D9488',
+            createdAt: data.created_at,
+          };
+          setUsers((prev) => [...prev.filter((u) => u.id !== user.id), user]);
+        }
+      } catch (err) {
+        console.warn('Error verifying login on Supabase:', err);
+      }
+    }
+
     if (user) {
       setCurrentUser(user);
       return { success: true, user };
     }
-    return { success: false, message: 'Credenciales incorrectas' };
+
+    return {
+      success: false,
+      message: 'Correo electrónico o contraseña incorrectos. Por favor verifica tus credenciales.',
+    };
   };
 
-  const loginAs = (userId) => {
-    const user = users.find((u) => u.id === userId);
-    if (user) {
-      setCurrentUser(user);
-      return { success: true, user };
-    }
-    return { success: false };
-  };
-
+  // Secure registration creating real profile in Supabase
   const register = async (userData) => {
-    const exists = users.some((u) => u.email.toLowerCase() === userData.email.toLowerCase());
-    if (exists) {
-      return { success: false, message: 'El correo electrónico ya está registrado' };
+    const cleanEmail = userData.email.trim().toLowerCase();
+
+    // Check email uniqueness locally
+    const existsLocally = users.some((u) => u.email.toLowerCase() === cleanEmail);
+    if (existsLocally) {
+      return { success: false, message: 'Este correo electrónico ya está registrado en la plataforma.' };
+    }
+
+    // Check uniqueness in Supabase
+    if (isSupabaseConfigured) {
+      try {
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+
+        if (existing) {
+          return { success: false, message: 'Este correo electrónico ya está registrado en la plataforma.' };
+        }
+      } catch (err) {
+        console.warn('Error checking existing email:', err);
+      }
     }
 
     const newUser = {
-      id: `user_${Date.now().toString(36)}`,
-      ...userData,
-      balance: userData.role === 'provider' ? 1000 : 0,
+      id: `user_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
+      name: userData.name.trim(),
+      email: cleanEmail,
+      password: userData.password,
+      role: userData.role || 'doer',
+      company: userData.company ? userData.company.trim() : null,
+      industry: userData.industry ? userData.industry.trim() : null,
+      city: userData.city || 'Quito',
+      gender: userData.gender || 'F',
+      age: userData.age ? parseInt(userData.age) : null,
+      balance: userData.role === 'provider' ? 500.0 : 0.0,
       verified: false,
       surveysCompleted: 0,
       streak: 0,
-      avatarColor: '#0D9488',
+      avatarColor: userData.role === 'provider' ? '#0D9488' : '#6366F1',
       createdAt: new Date().toISOString(),
     };
 
     setUsers((prev) => [...prev, newUser]);
     setCurrentUser(newUser);
 
-    // Sync to Supabase in background
+    // Save directly to Supabase PostgreSQL
     if (isSupabaseConfigured) {
       try {
         await supabase.from('profiles').insert([
@@ -121,10 +183,11 @@ export const AuthProvider = ({ children }) => {
             email: newUser.email,
             password: newUser.password,
             role: newUser.role,
-            company: newUser.company || null,
-            industry: newUser.industry || null,
-            city: newUser.city || 'Quito',
-            gender: newUser.gender || 'F',
+            company: newUser.company,
+            industry: newUser.industry,
+            city: newUser.city,
+            gender: newUser.gender,
+            age: newUser.age,
             verified: false,
             balance: newUser.balance,
             surveys_completed: 0,
@@ -133,7 +196,7 @@ export const AuthProvider = ({ children }) => {
           },
         ]);
       } catch (err) {
-        console.warn('Error saving user to Supabase:', err);
+        console.error('Error saving user to Supabase:', err);
       }
     }
 
@@ -150,7 +213,6 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(updated);
     setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
 
-    // Sync to Supabase
     if (isSupabaseConfigured) {
       try {
         await supabase
@@ -178,7 +240,6 @@ export const AuthProvider = ({ children }) => {
         currentUser,
         users,
         login,
-        loginAs,
         register,
         logout,
         updateProfile,

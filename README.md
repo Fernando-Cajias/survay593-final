@@ -10,8 +10,7 @@ Survey 593 es una plataforma en la nube de inteligencia de mercado y democratiza
 🌐 **Enlace Oficial de Producción en Vivo:** [https://survay593-final.vercel.app](https://survay593-final.vercel.app)
 
 ## 📁 Documentación de Arquitectura y Estrategia de Negocio
-En la carpeta `/docs` encontrarás los documentos requeridos para la defensa académica y comercial:
-- [Presentacion_Ejecutiva_Para_Duenio.md](./docs/Presentacion_Ejecutiva_Para_Duenio.md): Pitch deck ejecutivo para el dueño/ingeniero (sin código, enfoque en negocio, marketing y objeción de usuarios).
+- [Presentacion_Ejecutiva_Para_Empresa.md](./docs/Presentacion_Ejecutiva_Para_Empresa.md): Presentación Ejecutiva y Comercial para Empresa (sin código, enfoque en negocio, marketing y objeción de usuarios).
 - [Arquitectura_Tecnica_Y_Negocio_Survey593.md](./docs/Arquitectura_Tecnica_Y_Negocio_Survey593.md): Justificación técnica formal, decisiones de arquitectura, nicho y modelo financiero.
 - [DDA_Survey593.md](./docs/DDA_Survey593.md): Documento de Diseño de Arquitectura (C4, DDD, NFRs, Cloud AWS/Supabase).
 - [Plan_Scrum_Equipo.md](./docs/Plan_Scrum_Equipo.md): Distribución de roles y módulos Scrum para los 8 integrantes del equipo.

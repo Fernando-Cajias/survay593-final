@@ -1,149 +1,129 @@
 # Presentación Ejecutiva y Comercial para Empresa
 ## Survey 593 — Plataforma de Inteligencia de Mercado y Monetización de Datos
-**Enlace Oficial en Producción:** [https://survay593-final.vercel.app](https://survay593-final.vercel.app)  
+**Enlace Oficial de Producción en Vivo:** [https://survay593-final.vercel.app](https://survay593-final.vercel.app)  
 **Audiencia:** Directores, Empresarios y Socios Estratégicos  
-**Objetivo:** Demostrar cómo se construyó el sistema, el retorno de inversión (ROI), el modelo financiero, la estrategia de marketing y cómo responder con total autoridad a la pregunta de tracción de usuarios.
+**Documento:** Dossier Ejecutivo de Arquitectura, Modelo Financiero y Plan de Operación
 
 ---
 
-## 🎯 RESUMEN DE ALTO NIVEL (Para hablar con el Ingeniero)
+## 1. Resumen Ejecutivo (Executive Summary)
 
-> *"Ingeniero, hoy no le venimos a mostrar solo un código o una maqueta. Le venimos a entregar una empresa tecnológica funcionando en vivo en internet. Survey 593 resuelve el problema más costoso de cualquier negocio en Ecuador: **tomar decisiones a ciegas**. Conectamos empresas que necesitan saber qué piensa la gente, con ciudadanos reales que reciben dinero en sus celulares por responder honestamente. Gracias a herramientas modernas y a la Inteligencia Artificial, construimos en semanas lo que a una consultora tradicional le tomaría 6 meses y decenas de miles de dólares."*
+Survey 593 es una plataforma tecnológica diseñada para transformar la investigación de mercado en Ecuador, eliminando la incertidumbre en la toma de decisiones empresariales. El sistema actúa como un **marketplace bidireccional**:
+* Permite a empresas, marcas y entidades investigadoras obtener datos primarios verificados, segmentados por ciudad y género en cuestión de horas.
+* Remunera a ciudadanos reales mediante transferencias directas a sus billeteras digitales por compartir su opinión con honestidad.
+* Incorpora el **No-Code BI Studio**, una herramienta analítica donde cualquier directivo puede estructurar tableros gerenciales arrastrando indicadores clave sin necesidad de conocimientos técnicos de programación.
 
----
-
-## 📑 ÍNDICE DE DIAPOSITIVAS / GUION DE EXPOSICIÓN
-
-### 📊 DIAPOSITIVA 1: La Visión del Negocio
-* **Mensaje Clave:** Convertir la opinión de los ecuatorianos en un activo financiero.
-* **El Problema del Mercado:**
-  * Hoy en Ecuador, una PyME o empresa que quiere lanzar un producto (ropa, comida, una tienda) solo tiene dos opciones:
-    1. Pagar **$3,000 a $6,000 USD** a encuestadoras tradicionales (CEDATOS, Kantar) y esperar 2 meses.
-    2. Mandar un Google Forms gratis a tíos y amigos por WhatsApp, obteniendo **datos falsos o complacientes**.
-* **Nuestra Solución (Survey 593):**
-  * Un marketplace en la nube donde la empresa lanza un cuestionario por $50 o $100 USD y en **24 horas** tiene 50 a 100 respuestas de clientes reales segmentados en su ciudad (Quito, Guayaquil, Cuenca), visualizándolos en su propio panel interactivo.
+La plataforma ha completado su ciclo de ingeniería y se encuentra **desplegada y operativa en la nube**, conectada a una base de datos relacional segura.
 
 ---
 
-### 🛠️ DIAPOSITIVA 2: ¿Cómo lo construimos? (Explicado sin tecnicismos)
-*Explicación para una persona que no sabe de código pero entiende de procesos y valor:*
+## 2. Arquitectura de Software y Selección Tecnológica
 
-1. **La Fachada y Mostrador (Frontend):**
-   * Usamos **React y Vite**, la misma base tecnológica con la que están hechos Netflix, Airbnb y Facebook.
-   * *¿Qué ventaja nos da?* Carga en 0.5 segundos en cualquier celular, sin que la pantalla parpadee ni se congele.
-2. **El Estilo y la Experiencia Visual:**
-   * Usamos el sistema de diseño **Google Stitch Tokens** y **Tailwind CSS**.
-   * *¿Qué ventaja nos da?* La estética se ve moderna y profesional (efecto Glassmorphism / estilo bancario oscuro), adaptable automáticamente a teléfonos, laptops y tablets.
-3. **La Bóveda Segura y Base de Datos (Backend):**
-   * Usamos **Supabase PostgreSQL** alojado en los centros de datos de **Amazon Web Services (AWS)**.
-   * *¿Qué ventaja nos da?* Es un motor relacional con seguridad de grado financiero. Como manejamos dinero y saldos en billeteras de usuarios, garantizamos que no se pierda un solo centavo ni se dupliquen pagos.
-4. **El Despliegue en la Nube:**
-   * Está alojado en **Vercel**, lo que significa que el sistema está disponible 24/7 en todo el planeta con certificado de seguridad SSL (el candado verde HTTPS).
-
----
-
-### 🤖 DIAPOSITIVA 3: El Acelerador Secreto: Inteligencia Artificial en el Desarrollo
-*Demostrar al dueño que el equipo utilizó las tecnologías más avanzadas del mundo para ahorrar tiempo y presupuesto:*
-
-* **Google Antigravity:** Nuestro motor de co-programación con agentes de Inteligencia Artificial que nos permitió estructurar la lógica compleja, depurar errores en tiempo real y coordinar a los 8 integrantes del equipo.
-* **Google Stitch:** Sistema de diseño generado con IA para definir paletas de colores armónicas (Teal `#0D9488` e Indigo `#6366F1`) y estándares de botones y tarjetas ejecutivas.
-* **NotebookLM (Google):** Utilizado para sintetizar las reglas de negocio del Ecosistema Kolab, la Ley de Protección de Datos de Ecuador (Derechos ARCO+) y los requerimientos del cliente sin perder información.
-* *El Impacto Real:* Con este stack potenciado con IA, el equipo de 8 desarrolladores rindió como un equipo sénior de 20 ingenieros, reduciendo el costo de desarrollo a una fracción mínima.
-
----
-
-### 🎨 DIAPOSITIVA 4: El Gran Diferenciador: "No-Code BI Dashboard Studio"
-*Esto es lo que enamora al cliente empresarial:*
-
-* Las aplicaciones tradicionales le entregan a la empresa un PDF estático aburrido o gráficos fijos que no se pueden modificar.
-* En Survey 593, el cliente entra al **No-Code BI Studio** y, **sin saber nada de sistemas ni de programación**, puede:
-  * Arrastrar con el ratón gráficos de **Pastel**, gráficos de **Radar multidimensional**, barras horizontales y tarjetas de KPI.
-  * Conectar cada gráfica a la pregunta que le interesa.
-  * Poner en pantalla gigante la **Vista en Vivo** y usar los **filtros demográficos en tiempo real** (ejemplo: ver cómo cambia la gráfica si solo filtramos *Mujeres de Quito* vs *Hombres de Guayaquil*).
-
----
-
-### 💰 DIAPOSITIVA 5: ¿Cómo Generamos Dinero? (El Modelo de Negocio)
-*La matemática financiera exacta que el dueño quiere ver:*
-
-Survey 593 no cobra por "usar la app", cobra por el **valor transaccional del dato verificado**:
+Para garantizar máxima velocidad, estabilidad y seguridad financiera, el sistema fue concebido bajo una arquitectura desacoplada de última generación:
 
 ```
-           EMPRESA CLIENTE                          SURVEY 593                       USUARIO CIUDADANO
-     ┌────────────────────────┐              ┌────────────────────────┐             ┌────────────────────────┐
-     │  Paga por estudio      │ ───────────► │  Retiene Spread (35%)  │ ──────────► │  Recibe Recompensa     │
-     │  $3.50 por respuesta   │              │  Margen: $1.25 / resp  │             │  $2.25 en su billetera │
-     └────────────────────────┘              └────────────────────────┘             └────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    CAPA VISUAL / CLIENTE                    │
+│   • React 18 + Vite 6 (Velocidad de respuesta sub-segundo)  │
+│   • Tailwind CSS + Google Stitch (Diseño Corporativo)       │
+│   • Chart.js 4 (Pastel, Radar multidimensional, Barras)     │
+│   • No-Code BI Studio (HTML5 Drag & Drop Nativo)            │
+│   • Alojamiento Global en Vercel (Disponibilidad 24/7, SSL) │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Conexión Cifrada HTTPS / REST
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                CAPA DE DATOS Y TRANSACCIONES                │
+│   • Supabase PostgreSQL 15 (Centros de datos AWS)           │
+│   • Row Level Security (RLS) para aislamiento de clientes   │
+│   • Ledger Contable con Consistencia ACID                   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-#### Flujos de Ingreso:
-1. **Margen por Respuesta (Spread del 30% al 40%):**
-   * Supongamos que una marca local hace una encuesta a 1,000 personas pagando $3.50 por cada una = **$3,500 USD**.
-   * A los encuestados se les abona $2.25 en su billetera = $2,250 USD.
-   * **Ganancia neta para Survey 593:** **$1,250 USD en un solo estudio**.
-   * Con solo 10 estudios medianos al mes = **$12,500 USD de facturación neta mensual**.
-2. **Suscripción B2B "BI Studio Pro" ($49/mes por empresa):**
-   * Para empresas que quieren crear tableros ilimitados y exportar reportes ejecutivos a Excel/PDF.
-   * Con 50 empresas suscritas = **$2,450 USD mensuales fijos**.
-3. **Comisión por Retiro de Fondos (2.5%):**
-   * Pequeño fee bancario cuando el usuario transfiere su saldo hacia Banco Pichincha, Guayaquil o DeUna.
-4. **Venta Cruzada en el Ecosistema Kolab:**
-   * Survey 593 alimenta de perfiles de consumo y datos de mercado a los otros 15 proyectos Kolab, convirtiendo nuestra base de datos en el activo más rentable de la corporación.
+### Justificación Estratégica del Stack:
+1. **Frontend en React 18 + Vite:** Proporciona una experiencia de navegación inmediata (Single Page Application) sin recargas molestas de pantalla, compatible con cualquier dispositivo móvil o de escritorio.
+2. **Sistema Visual (Google Stitch + Tailwind):** Estandariza la interfaz bajo una línea gráfica corporativa, intuitiva y limpia, facilitando su adopción por parte de cualquier usuario sin necesidad de capacitaciones complejas.
+3. **Base de Datos Relacional (Supabase PostgreSQL):** A diferencia de bases de datos documentales informales, PostgreSQL asegura el cumplimiento del estándar **ACID** (Atomicidad, Consistencia, Aislamiento y Durabilidad). Cada transacción financiera, balance de billetera y respuesta de encuesta queda registrada con precisión contable, imposibilitando saldos dobles o retiros inconsistentes.
 
 ---
 
-### 📣 DIAPOSITIVA 6: Estrategia de Marketing con Casos Prácticos Ecuatorianos
-*¿Cómo hacemos que las empresas y los usuarios lleguen masivamente?*
+## 3. Metodología de Desarrollo y Aceleración con Inteligencia Artificial
 
-#### 🛍️ Ejemplo Real 1: Caso "Textil Andina" (Moda en Quito)
-* **Situación:** Una fábrica de ropa en Atuntaqui/Quito quiere sacar una nueva línea de chaquetas juveniles, pero no sabe si fabricarlas en tela impermeable o algodón reciclado, ni si la gente pagaría $45 o $65 USD.
-* **Estrategia B2B de Captación:**
-  * Contactamos al Gerente Comercial por LinkedIn o WhatsApp empresarial: *"Ingeniero, antes de gastar $15,000 en cortar tela a ciegas, valide la demanda con 200 jóvenes de Quito en 24 horas por solo $150 USD"*.
-  * La empresa publica el estudio en Survey 593 y al día siguiente ve en el gráfico de radar que el 82% prefiere tela impermeable y pagaría hasta $55 USD. La empresa ahorra miles de dólares y se vuelve cliente recurrente.
+La construcción de la plataforma fue ejecutada por un equipo de 8 desarrolladores bajo el marco de trabajo ágil **Scrum**, potenciado por herramientas de ingeniería asistida por Inteligencia Artificial:
 
-#### 🍔 Ejemplo Real 2: Caso "Restaurante / Franquicia Local" (Guayaquil)
-* Un restaurante de hamburguesas en Samborondón quiere saber si abrir un local en Urdesa o en Vía a la Costa.
-* Lanza una encuesta segmentada por ubicación en Survey 593. En 48 horas obtiene la respuesta exacta basada en datos de clientes que realmente viven en esas zonas.
+* **Google Antigravity:** Plataforma de ingeniería y co-desarrollo con agentes de IA, empleada para la orquestación arquitectónica, auditorías continuas de código y coordinación técnica de los módulos del equipo.
+* **Google Stitch:** Sistema generativo de componentes de diseño utilizado para definir una jerarquía visual homogénea, paletas de contraste accesibles y controles interactivos consistentes.
+* **NotebookLM (Google):** Entorno de síntesis de conocimiento utilizado para estructurar las directivas legales de protección de datos (cumplimiento de derechos ARCO+ en Ecuador) y alinear la solución con los requerimientos del Ecosistema Kolab.
 
-#### 👥 Captación de Miles de Usuarios Encuestados (B2C) a Costo Casi Cero:
-1. **Viralidad "Invita a un amigo y gana $0.50":**
-   * Cada usuario tiene su enlace de referidos. Cuando su amigo se registra y responde su primera encuesta, ambos ganan un bono. Esto genera un crecimiento exponencial orgánico.
-2. **Activación en Universidades de Quito y Guayaquil:**
-   * Charlas y stands en facultades: *"Gana dinero en tus horas libres respondiendo encuestas desde tu celular y retira directamente a tu cuenta bancaria o DeUna"*.
-3. **TikTok y Reels con "Prueba de Pago":**
-   * Videos cortos mostrando la notificación del retiro en DeUna / Banco Pichincha: *"Hice $15 esta semana respondiendo encuestas en Survey 593 mientras iba en el bus"*. La prueba del dinero real viraliza la aplicación en horas.
+*Resultado:* Reducción de los tiempos de desarrollo de 6 meses tradicionales a pocas semanas de trabajo intensivo, optimizando la inversión y entregando un producto robusto y listo para producción.
 
 ---
 
-## 🥊 CÓMO RESPONDER A LA PREGUNTA CRÍTICA:
-### *"¿Ya alguna persona ha usado la aplicación o no hay nadie todavía?"*
+## 4. El Factor Diferenciador: "No-Code BI Dashboard Studio"
 
-> [!CAUTION]
-> Si respondes tímidamente: *"No, nadie la ha usado aún..."*, el dueño puede frustrarse.  
-> Si mientes diciendo que hay 5,000 usuarios, te pedirá ver los depósitos bancarios y se romperá la confianza.
+Las soluciones convencionales suelen entregar a los empresarios reportes rígidos en formatos planos (PDF estáticos o tablas de Excel complejas). Survey 593 introduce un **Constructor Visual de Inteligencia de Negocios**:
 
-### 🛡️ La Respuesta Perfecta y Profesional:
-
-> *"Ingeniero, qué excelente pregunta, y la respuesta es muy clara:*  
->  
-> *Hasta el día de hoy estábamos en la **Fase de Ingeniería y Blindaje de Seguridad**. Haber metido usuarios a responder encuestas y cobrar dinero antes de tener la base de datos de Supabase asegurada, el enrutador en la nube y el sistema anti-fraude listo, hubiera sido una irresponsabilidad financiera que le habría costado dinero a la empresa.*  
->  
-> *Hoy el sistema ya está **100% construido, probado y desplegado en la nube**.  
->  
-> *A partir de este instante arranca la **Fase de Lanzamiento Piloto Controlado (Semana 1)**:*  
-> * **Paso 1 (Días 1 a 3):** Incorporar al primer grupo de **50 encuestados controlados** (nuestro propio círculo y estudiantes verificados) para probar el flujo de respuesta y validar los retiros bancarios.  
-> * **Paso 2 (Días 4 a 7):** Salir con la primera campaña comercial de una empresa aliada (ej. Textil Andina) para generar la primera facturación real.  
->  
-> *La plataforma está lista para recibir hoy mismo a los primeros 1,000 usuarios sin que el servidor se caiga y sin tocar una sola línea de código adicional."*
-
-**Con esta respuesta:**
-1. Demuestras madurez ejecutiva (cuidaste el dinero y la seguridad antes de apresurarte).
-2. Le das un plan de acción inmediato de 7 días.
-3. Lo invitas a ser parte del lanzamiento comercial en lugar de quedarse en el reclamo.
+* **Lienzo Adaptable:** Los directores pueden arrastrar componentes visuales (gráficos de pastel, radares de ángulos multidimensionales, tendencias temporales y tarjetas de KPI) y organizarlos según sus prioridades analíticas.
+* **Vinculación Relacional en Tiempo Real:** Cada componente se enlaza a preguntas específicas de la base de datos de encuestas.
+* **Modo Presentación con Filtros Demográficos en Vivo:** Permite realizar cruces de información al instante durante reuniones de directorio (por ejemplo, filtrar el comportamiento de consumo de *Quito vs Guayaquil* o segmentar por *Género* en tiempo real).
 
 ---
 
-## 👥 Resumen del Equipo Scrum (8 Integrantes)
-* **Liderazgo (5to Semestre):** Fernando Cajías (Lead & Scrum Master) y Jordy Santillán (Data Architect).
-* **Calidad y Frontend Intermedio (3er Semestre):** Dennis Toapanta (QA Lead & Wizard).
-* **Desarrollo Modular Junior (1er Semestre):** Óscar Males (UI), Antony Cayambe (Formularios), Antony Jarrín (UX), Dennis Villasis (Auth), Calixto Carrera (Reportes).
+## 5. Modelo de Negocio y Generación de Ingresos
+
+Survey 593 opera bajo un modelo de monetización híbrido **Marketplace Transaccional + Suscripción B2B (SaaS)**:
+
+```
+        EMPRESA CLIENTE                     SURVEY 593 (PLATAFORMA)                  USUARIO CIUDADANO
+   ┌───────────────────────┐              ┌─────────────────────────┐         ┌─────────────────────────┐
+   │ Paga por estudio:     │ ───────────► │ Spread Operativo (35%): │ ──────► │ Recibe Recompensa:      │
+   │ $3.50 por respuesta   │              │ Margen Neto: $1.25      │         │ $2.25 en saldo billetera│
+   └───────────────────────┘              └─────────────────────────┘         └─────────────────────────┘
+```
+
+### Fuentes de Ingreso:
+1. **Margen por Respuesta Verificada (Take-Rate del 30% al 40%):**
+   * Por un estudio típico de 1,000 respuestas pagado a $3.50 por unidad ($3,500 USD), la plataforma abona $2,250 USD a los ciudadanos y retiene **$1,250 USD de margen operativo neto**.
+   * Con una proyección conservadora de 10 estudios al mes, la línea de negocio genera **$12,500 USD mensuales**.
+2. **Suscripción B2B "BI Studio Pro" ($49 / mes):**
+   * Licencia corporativa para empresas que requieren tableros personalizados ilimitados, exportación automatizada a formatos ejecutivos y almacenamiento histórico de datos.
+3. **Comisión por Liquidación de Fondos (2.5%):**
+   * Tarifa de intermediación aplicada en transferencias bancarias locales (Banco Pichincha, Guayaquil, DeUna).
+4. **Activo Estratégico del Ecosistema Kolab:**
+   * Survey 593 actúa como el proveedor primario de datos demográficos y hábitos de consumo para los próximos 15 proyectos del ecosistema, reduciendo significativamente sus costos de adquisición de clientes.
+
+---
+
+## 6. Estrategia de Mercado y Casos de Aplicación en Ecuador
+
+### Nichos de Mercado Prioritarios:
+* **PyMEs y Marcas de Retail/Moda:** Empresas locales que requieren validar colecciones, empaques o precios antes de incurrir en costos de fabricación.
+  * *Ejemplo:* Una empresa de calzado o confección textil en Quito que requiere evaluar si sus clientes potenciales pagarían $45 o $60 por un nuevo diseño antes de cortar inventario masivo.
+* **Sector Restaurantero y Alimentos:** Marcas que buscan validar la ubicación de un nuevo local o cambios en su menú en función del perfil de clientes de cada sector (Quito Centro vs Valles, o Samborondón vs Urdesa).
+* **Agencias de Comunicación y Consultoría:** Medición de impacto de marca o percepción ciudadana con entrega de resultados verificados en menos de 48 horas.
+
+### Estrategia de Crecimiento y Adquisición:
+* **Frente Empresarial (B2B):** Modelo de prueba inicial (*First-Study Trial*) donde la empresa experimenta el levantamiento de sus primeras 15 respuestas y el uso del No-Code Studio sin costo inicial.
+* **Frente de Usuarios (B2C):** Mecanismos de crecimiento viral mediante programas de referidos, alianzas con centros universitarios y difusión en canales digitales destacando la remuneración transparente hacia cuentas bancarias locales.
+
+---
+
+## 7. Estado Operativo Actual y Plan de Despliegue Progresivo
+
+Para salvaguardar la reputación de la empresa y la integridad de los fondos financieros, el lanzamiento de la plataforma se rige por un **protocolo de despliegue controlado en tres fases**:
+
+| Fase | Objetivo Principal | Estado | Indicadores Clave |
+| :--- | :--- | :--- | :--- |
+| **Fase 1: Ingeniería y Blindaje de Seguridad** | Desarrollo del frontend, configuración de la base de datos PostgreSQL, políticas RLS y despliegue en Vercel. | **✅ COMPLETADA** | Sistema en línea, 0 vulnerabilidades de autenticación, transacciones validadas. |
+| **Fase 2: Lanzamiento Piloto Controlado (Cohorte Inicial)** | Incorporación de un grupo cerrado de 50 usuarios verificados para auditar el ciclo completo de respuesta y retiro bancario real. | **🔄 EN EJECUCIÓN (Semana 1)** | Tasa de respuesta > 95%, latencia de pago < 24h, estabilidad del servidor. |
+| **Fase 3: Expansión Comercial y Campañas Abiertas** | Apertura pública de registros y comercialización de los primeros estudios B2B con empresas aliadas. | **📅 PLANIFICADA (Semana 2)** | Primeras 5 empresas facturando, meta de 1,000 usuarios activos. |
+
+Este enfoque por fases garantiza que la plataforma escale con absoluta solvencia operativa, protegiendo el capital de la empresa antes de iniciar la difusión masiva en el mercado.
+
+---
+
+## 8. Organización del Equipo de Trabajo (Scrum Team)
+
+* **Liderazgo Técnico y Gestión:** Fernando Cajías (Scrum Master & Lead Architect) y Jordy Santillán (Data Architect & Backend Lead).
+* **Aseguramiento de Calidad y Funcionalidad:** Dennis Toapanta (Frontend & QA Lead).
+* **Desarrollo de Módulos Específicos:** Óscar Males (Diseño UI), Antony Cayambe (Formularios y Validación), Antony Jarrín (UX e Investigación), Dennis Villasis (Autenticación y KYC), Calixto Carrera (Reportes y Auditoría).

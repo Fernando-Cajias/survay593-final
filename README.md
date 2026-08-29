@@ -1,13 +1,21 @@
 # Survey 593 — Ecosistema Kolab
 
 ![Survey 593 Logo](https://img.shields.io/badge/Survey%20593-Kolab%20Ecosystem-0D9488?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Producci%C3%B3n%20En%20Vivo-10B981?style=for-the-badge)
+[![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)](https://survay593-final.vercel.app)
+[![Supabase Database](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
 
-Survey 593 es una plataforma (Prototipo SPA) de democratización de monetización de datos. Permite a empresas obtener *insights* reales del mercado en tiempo real, mientras recompensa financieramente a los usuarios (Doers) verificados por su opinión. Este proyecto actúa como el pilar de recolección de datos ("vendedor interno") para los futuros proyectos del Ecosistema Kolab.
+Survey 593 es una plataforma en la nube de inteligencia de mercado y democratización de monetización de datos. Permite a empresas obtener *insights* reales del mercado en tiempo real mediante un **No-Code BI Studio Drag & Drop**, mientras recompensa financieramente a los ciudadanos verificados por su opinión. Este proyecto actúa como el pilar de recolección de datos ("vendedor interno") para los futuros 15 proyectos del Ecosistema Kolab.
 
-## 📁 Documentación de Arquitectura (Entregable Final)
-En la carpeta `/docs` encontrarás los documentos requeridos para la defensa final:
-- [DDA_Survey593.md](./docs/DDA_Survey593.md): Documento de Diseño de Arquitectura (C4, DDD, NFRs, Cloud).
-- [Presentacion_Survey593.md](./docs/Presentacion_Survey593.md): Guion y estructura para las diapositivas de defensa.
+🌐 **Enlace Oficial de Producción en Vivo:** [https://survay593-final.vercel.app](https://survay593-final.vercel.app)
+
+## 📁 Documentación de Arquitectura y Estrategia de Negocio
+En la carpeta `/docs` encontrarás los documentos requeridos para la defensa académica y comercial:
+- [Presentacion_Ejecutiva_Para_Duenio.md](./docs/Presentacion_Ejecutiva_Para_Duenio.md): Pitch deck ejecutivo para el dueño/ingeniero (sin código, enfoque en negocio, marketing y objeción de usuarios).
+- [Arquitectura_Tecnica_Y_Negocio_Survey593.md](./docs/Arquitectura_Tecnica_Y_Negocio_Survey593.md): Justificación técnica formal, decisiones de arquitectura, nicho y modelo financiero.
+- [DDA_Survey593.md](./docs/DDA_Survey593.md): Documento de Diseño de Arquitectura (C4, DDD, NFRs, Cloud AWS/Supabase).
+- [Plan_Scrum_Equipo.md](./docs/Plan_Scrum_Equipo.md): Distribución de roles y módulos Scrum para los 8 integrantes del equipo.
+- [Presentacion_Survey593.md](./docs/Presentacion_Survey593.md): Guion de 10 diapositivas para la defensa final.
 
 ## 📁 Estructura del Proyecto
 

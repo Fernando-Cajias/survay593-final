@@ -58,6 +58,10 @@ export const DoerSurveys = () => {
                     +${survey.rewardPerResponse?.toFixed(2)}
                   </span>
                 </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-emerald-300 font-bold bg-emerald-500/10 px-2 py-1 rounded-stitch border border-emerald-500/20 mb-3">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  <span>Fondo Financiado por Empresa · Recompensa en Custodia (Escrow)</span>
+                </div>
                 <h3 className="text-base font-bold text-white mb-2">{survey.title}</h3>
                 <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed mb-4">{survey.description}</p>
               </div>

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useDatabase } from '../../context/DatabaseContext';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { Clock, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Clock, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export const DoerSurveys = () => {
   const { currentUser } = useAuth();

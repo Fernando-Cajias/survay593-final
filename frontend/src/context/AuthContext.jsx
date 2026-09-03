@@ -1,11 +1,34 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { INITIAL_USERS } from '../services/seedData';
+import { maskEmail } from '../services/ecuadorValidators';
 
 const AuthContext = createContext(null);
 
 const AUTH_STORAGE_KEY = 'survey593_react_user';
 const USERS_STORAGE_KEY = 'survey593_react_users';
+const SECURITY_LOCKS_KEY = 'survey593_security_locks';
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_SECONDS = 900; // 15 minutos de bloqueo por fuerza bruta
+
+// Helper para leer bloqueos de localStorage
+const getSecurityLocks = () => {
+  try {
+    const data = localStorage.getItem(SECURITY_LOCKS_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+};
+
+// Helper para guardar bloqueos
+const saveSecurityLocks = (locks) => {
+  try {
+    localStorage.setItem(SECURITY_LOCKS_KEY, JSON.stringify(locks));
+  } catch (err) {
+    console.warn('Could not save security locks:', err);
+  }
+};
 
 export const AuthProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
@@ -70,9 +93,202 @@ export const AuthProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  // Secure login validating email & password
+  // Consultar estado de bloqueo por email o identificador
+  const checkLockStatus = (emailOrId) => {
+    if (!emailOrId) return { isLocked: false, remainingSeconds: 0, attempts: 0 };
+    const key = emailOrId.trim().toLowerCase();
+    const locks = getSecurityLocks();
+    const lock = locks[key];
+    if (!lock) return { isLocked: false, remainingSeconds: 0, attempts: 0 };
+
+    const attempts = lock.attempts || 0;
+    if (lock.lockedUntil) {
+      const now = Date.now();
+      const diff = Math.ceil((lock.lockedUntil - now) / 1000);
+      if (diff > 0) {
+        return { isLocked: true, remainingSeconds: diff, attempts };
+      } else {
+        // Expiró el bloqueo temporal
+        delete lock.lockedUntil;
+        lock.attempts = 0;
+        saveSecurityLocks(locks);
+        return { isLocked: false, remainingSeconds: 0, attempts: 0 };
+      }
+    }
+    return { isLocked: false, remainingSeconds: 0, attempts };
+  };
+
+  // Registrar intento fallido
+  const recordFailedAttempt = (emailOrId) => {
+    if (!emailOrId) return { isLocked: false, remainingSeconds: 0, attempts: 1 };
+    const key = emailOrId.trim().toLowerCase();
+    const locks = getSecurityLocks();
+    const lock = locks[key] || { attempts: 0 };
+    lock.attempts = (lock.attempts || 0) + 1;
+    lock.lastAttempt = Date.now();
+
+    if (lock.attempts >= MAX_FAILED_ATTEMPTS) {
+      lock.lockedUntil = Date.now() + (LOCKOUT_DURATION_SECONDS * 1000);
+      locks[key] = lock;
+      saveSecurityLocks(locks);
+      return {
+        isLocked: true,
+        remainingSeconds: LOCKOUT_DURATION_SECONDS,
+        attempts: lock.attempts,
+        remainingAttempts: 0,
+        message: 'Acceso bloqueado por seguridad tras 5 intentos fallidos. Espera 15 minutos o desbloquea tu cuenta verificando tu identidad.',
+      };
+    }
+
+    locks[key] = lock;
+    saveSecurityLocks(locks);
+    const remaining = MAX_FAILED_ATTEMPTS - lock.attempts;
+    return {
+      isLocked: false,
+      remainingSeconds: 0,
+      attempts: lock.attempts,
+      remainingAttempts: remaining,
+      message: 'Correo electrónico o contraseña incorrectos.',
+    };
+  };
+
+  // Resetear intentos fallidos (en login exitoso o desbloqueo manual)
+  const resetFailedAttempts = (emailOrId) => {
+    if (!emailOrId) return;
+    const key = emailOrId.trim().toLowerCase();
+    const locks = getSecurityLocks();
+    if (locks[key]) {
+      delete locks[key];
+      saveSecurityLocks(locks);
+    }
+  };
+
+  // Desbloquear cuenta manualmente
+  const unlockAccount = (emailOrId) => {
+    resetFailedAttempts(emailOrId);
+    return { success: true, message: 'La cuenta ha sido desbloqueada exitosamente.' };
+  };
+
+  // Búsqueda de cuenta por Identidad (Correo, Cédula de Identidad, RUC o Empresa)
+  const findAccountByIdentity = async (identifier) => {
+    if (!identifier) return { success: false, message: 'Ingresa un identificador válido.' };
+    const clean = identifier.trim().toLowerCase();
+
+    // 1. Buscar en cache local
+    let user = users.find(
+      (u) =>
+        u.email.toLowerCase() === clean ||
+        (u.cedula && u.cedula.trim() === identifier.trim()) ||
+        (u.ruc && u.ruc.trim() === identifier.trim()) ||
+        (u.company && u.company.toLowerCase() === clean) ||
+        (u.name && u.name.toLowerCase() === clean)
+    );
+
+    // 2. Si no está en local, buscar en Supabase
+    if (!user && isSupabaseConfigured) {
+      try {
+        const { data: byEmail } = await supabase
+          .from('profiles')
+          .select('*')
+          .ilike('email', clean)
+          .maybeSingle();
+
+        if (byEmail) {
+          user = byEmail;
+        } else {
+          const { data: byCompany } = await supabase
+            .from('profiles')
+            .select('*')
+            .ilike('company', clean)
+            .maybeSingle();
+          if (byCompany) user = byCompany;
+        }
+      } catch (err) {
+        console.warn('Error searching identity on Supabase:', err);
+      }
+    }
+
+    if (user) {
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          maskedEmail: maskEmail(user.email),
+          role: user.role,
+          company: user.company || null,
+          city: user.city || 'Quito',
+          verified: Boolean(user.verified),
+        },
+      };
+    }
+
+    return {
+      success: false,
+      message: 'No encontramos ninguna cuenta registrada con esta información. Por favor verifica tus datos.',
+    };
+  };
+
+  // Restablecer contraseña y desbloquear
+  const resetPassword = async (userIdOrEmail, newPassword) => {
+    if (!userIdOrEmail || !newPassword || newPassword.length < 6) {
+      return { success: false, message: 'La contraseña debe tener al menos 6 caracteres.' };
+    }
+
+    const clean = userIdOrEmail.trim().toLowerCase();
+    const user = users.find((u) => u.id === userIdOrEmail || u.email.toLowerCase() === clean);
+
+    if (!user) {
+      return { success: false, message: 'Usuario no encontrado para restablecer contraseña.' };
+    }
+
+    // Actualizar en estado local
+    setUsers((prev) =>
+      prev.map((u) => (u.id === user.id ? { ...u, password: newPassword } : u))
+    );
+
+    // Si el usuario actual es el mismo, actualizarlo
+    if (currentUser?.id === user.id) {
+      setCurrentUser((prev) => ({ ...prev, password: newPassword }));
+    }
+
+    // Actualizar en Supabase
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ password: newPassword })
+          .eq('id', user.id);
+      } catch (err) {
+        console.warn('Error updating password in Supabase:', err);
+      }
+    }
+
+    // Desbloquear cuenta automáticamente si estaba bloqueada
+    resetFailedAttempts(user.email);
+
+    return {
+      success: true,
+      message: 'Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión con tu nueva clave.',
+    };
+  };
+
+  // Secure login validating email & password with anti-brute force protection
   const login = async (email, password) => {
     const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Verificar si la cuenta está bloqueada por intentos fallidos
+    const lockStatus = checkLockStatus(cleanEmail);
+    if (lockStatus.isLocked) {
+      return {
+        success: false,
+        isLocked: true,
+        remainingSeconds: lockStatus.remainingSeconds,
+        attempts: lockStatus.attempts,
+        message: `Acceso bloqueado por seguridad debido a 5 intentos fallidos consecutivos. Intenta nuevamente en ${Math.ceil(lockStatus.remainingSeconds / 60)} min o desbloquea tu cuenta verificando tu identidad.`,
+      };
+    }
 
     // First check local state
     let user = users.find((u) => u.email.toLowerCase() === cleanEmail && u.password === password);
@@ -96,6 +312,8 @@ export const AuthProvider = ({ children }) => {
             role: data.role,
             company: data.company,
             industry: data.industry,
+            cedula: data.cedula || null,
+            ruc: data.ruc || null,
             age: data.age,
             city: data.city,
             gender: data.gender,
@@ -114,13 +332,25 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (user) {
+      // Limpiar intentos fallidos tras login exitoso
+      resetFailedAttempts(cleanEmail);
       setCurrentUser(user);
       return { success: true, user };
     }
 
+    // Registrar intento fallido
+    const failInfo = recordFailedAttempt(cleanEmail);
     return {
       success: false,
-      message: 'Correo electrónico o contraseña incorrectos. Por favor verifica tus credenciales.',
+      isLocked: failInfo.isLocked,
+      remainingSeconds: failInfo.remainingSeconds,
+      attempts: failInfo.attempts,
+      remainingAttempts: failInfo.remainingAttempts,
+      message: failInfo.isLocked
+        ? failInfo.message
+        : failInfo.attempts >= 3
+        ? `Contraseña incorrecta. ⚠️ Advertencia: Llevas ${failInfo.attempts} de 5 intentos. Al 5to intento tu acceso será bloqueado por seguridad.`
+        : 'Correo electrónico o contraseña incorrectos. Por favor verifica tus credenciales.',
     };
   };
 
@@ -242,6 +472,10 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateProfile,
+        checkLockStatus,
+        unlockAccount,
+        findAccountByIdentity,
+        resetPassword,
         isAuthenticated: Boolean(currentUser),
       }}
     >

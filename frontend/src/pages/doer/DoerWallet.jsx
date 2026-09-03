@@ -239,7 +239,7 @@ export const DoerWallet = () => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-4xl">
+    <div className={`space-y-8 animate-fade-in max-w-4xl ${selectedTxnVoucher ? 'print:hidden' : ''}`}>
       {/* Wallet Summary Card */}
       <div className="glass-card p-8 bg-gradient-to-br from-primary/15 via-slate-800 to-secondary/15 border-primary/30 text-center relative overflow-hidden shadow-2xl">
         <div className="text-xs font-bold uppercase tracking-widest text-primary-light mb-2">
@@ -510,18 +510,18 @@ export const DoerWallet = () => {
       {/* MODAL 2: COMPROBANTE OFICIAL BANCARIO CON BOTÓN SALIR Y SCROLL BLINDADO */}
       {selectedTxnVoucher && (
         <div
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-y-auto"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-y-auto printable-modal-overlay"
           onClick={() => setSelectedTxnVoucher(null)} // Click outside to close!
         >
           <div
-            className="w-full max-w-md bg-white text-slate-900 rounded-stitch-xl shadow-2xl overflow-hidden animate-scale-in border border-slate-200 max-h-[92vh] flex flex-col relative my-auto"
+            className="w-full max-w-md bg-white text-slate-900 rounded-stitch-xl shadow-2xl overflow-hidden animate-scale-in border border-slate-200 max-h-[92vh] flex flex-col relative my-auto printable-invoice print:max-h-none print:shadow-none print:border-slate-300"
             onClick={(e) => e.stopPropagation()} // Prevent close on inside click
           >
             {/* Top Close Floating X Button */}
             <button
               onClick={() => setSelectedTxnVoucher(null)}
               title="Cerrar comprobante"
-              className="absolute top-3 right-3 z-30 text-white/90 hover:text-white bg-black/30 hover:bg-black/60 p-1.5 rounded-full transition-colors"
+              className="absolute top-3 right-3 z-30 text-white/90 hover:text-white bg-black/30 hover:bg-black/60 p-1.5 rounded-full transition-colors no-print"
             >
               <X className="w-5 h-5" />
             </button>
@@ -631,7 +631,7 @@ export const DoerWallet = () => {
             </div>
 
             {/* Sticky Action Footer (Siempre visible al final) */}
-            <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex gap-2 flex-shrink-0">
+            <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex gap-2 flex-shrink-0 no-print">
               <button
                 type="button"
                 onClick={handlePrintVoucher}

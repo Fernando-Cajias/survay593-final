@@ -28,6 +28,7 @@ import {
   Clock,
   Sparkles,
   School,
+  X,
 } from 'lucide-react';
 
 export const CreateSurveyWizard = () => {
@@ -189,6 +190,8 @@ export const CreateSurveyWizard = () => {
         companyName: currentOrg?.name || currentUser.company || 'Orión Technologies',
         companyRepresentative: currentUser.name,
         companyEmail: currentUser.email,
+        ruc: currentOrg?.ruc || (currentUser.company ? '1793204829001' : '1724589301001'),
+        address: currentOrg?.address || `${currentOrg?.city || 'Quito'}, Ecuador`,
         campaignTitle: title,
         targetResponses,
         rewardPerResponse,
@@ -212,12 +215,13 @@ export const CreateSurveyWizard = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in pb-12">
-      <button
-        onClick={() => navigate('/provider')}
-        className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white font-medium transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Volver al Dashboard
-      </button>
+      <div className={`space-y-6 ${paymentSuccessReceipt ? 'print:hidden' : ''}`}>
+        <button
+          onClick={() => navigate('/provider')}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white font-medium transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Volver al Dashboard
+        </button>
 
       <div>
         <h1 className="text-2xl font-black text-white">Crear y Financiar Campaña de Estudio ✏️</h1>
@@ -853,93 +857,260 @@ export const CreateSurveyWizard = () => {
         </div>
       )}
 
+      {/* End of wizard form wrapper */}
+      </div>
+
       {/* ========================================================================= */}
-      {/* MODAL DE COMPROBANTE OFICIAL B2B / FACTURA ELECTRÓNICA DE PAGO            */}
+      {/* MODAL DE FACTURA ELECTRÓNICA OFICIAL B2B (RIDE SRI ECUADOR)               */}
       {/* ========================================================================= */}
       {paymentSuccessReceipt && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
-          <div className="w-full max-w-md bg-white text-slate-900 rounded-stitch-xl shadow-2xl overflow-hidden animate-scale-in border border-slate-200 my-auto">
-            {/* Header Factura */}
-            <div className="bg-[#0D9488] p-5 text-white text-center">
-              <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-2">
-                <Check className="w-6 h-6 stroke-[3] text-white" />
-              </div>
-              <div className="text-[10px] font-black uppercase tracking-widest text-teal-100">
-                Comprobante de Pago & Fondeo Escrow B2B
-              </div>
-              <h3 className="text-xl font-black">Campaña Financiada y Activa</h3>
-              <p className="text-xs text-teal-100 mt-0.5">Survey 593 · Kolab Tech S.A.S.</p>
-            </div>
-
-            {/* Cuerpo de la Factura */}
-            <div className="p-6 space-y-3.5 text-xs">
-              <div className="text-center py-2.5 bg-slate-50 rounded-stitch border border-slate-200">
-                <div className="text-[10px] font-bold text-slate-500 uppercase">Monto Fondeado en Custodia</div>
-                <div className="text-3xl font-black text-slate-950 font-mono">
-                  ${paymentSuccessReceipt.totalInvestment.toFixed(2)} USD
-                </div>
-                <span className="inline-block mt-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                  ✓ Pago Verificado · Fondos en Escrow
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-5 animate-fade-in overflow-y-auto printable-modal-overlay">
+          <div className="w-full max-w-2xl bg-white text-slate-900 rounded-xl shadow-2xl overflow-hidden animate-scale-in border border-slate-300 my-auto printable-invoice">
+            {/* Barra superior de acciones (Sólo visible en pantalla) */}
+            <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between no-print">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  Comprobante Electrónico Autorizado (RIDE SRI)
                 </span>
               </div>
-
-              <div className="space-y-2 text-slate-600 divide-y divide-slate-100">
-                <div className="flex justify-between pt-1">
-                  <span className="text-slate-500 font-medium">Factura Nº:</span>
-                  <span className="font-mono font-bold text-slate-900">{paymentSuccessReceipt.invoiceNumber}</span>
-                </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-slate-500 font-medium">Empresa Cliente:</span>
-                  <span className="font-bold text-slate-900">{paymentSuccessReceipt.companyName}</span>
-                </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-slate-500 font-medium">Campaña Creada:</span>
-                  <span className="font-semibold text-slate-800">{paymentSuccessReceipt.campaignTitle}</span>
-                </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-slate-500 font-medium">Método de Pago:</span>
-                  <span className="font-medium text-slate-800">{paymentSuccessReceipt.paymentMethod}</span>
-                </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-slate-500 font-medium">Bolsa Encuestados (65%):</span>
-                  <span className="font-mono font-bold text-emerald-700">${paymentSuccessReceipt.escrowFund.toFixed(2)} USD</span>
-                </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-slate-500 font-medium">Comisión Plataforma (35%):</span>
-                  <span className="font-mono text-slate-700">${paymentSuccessReceipt.platformFee.toFixed(2)} USD</span>
-                </div>
-              </div>
-
-              {/* QR */}
-              <div className="pt-2 border-t border-slate-200 flex items-center justify-between bg-slate-50 p-2 rounded-stitch text-[10px] text-slate-500">
-                <div className="flex items-center gap-2">
-                  <QrCode className="w-7 h-7 text-slate-700" />
-                  <div>
-                    <p className="font-bold text-slate-800">Autorización SRI Electrónica</p>
-                    <p className="font-mono text-[9px]">{paymentSuccessReceipt.authCodeSRI.slice(0, 22)}...</p>
-                  </div>
-                </div>
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 rounded-stitch bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Imprimir / Guardar PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentSuccessReceipt(null)}
+                  className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  title="Cerrar vista"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
-            {/* Botones */}
-            <div className="p-4 bg-slate-100 border-t border-slate-200 flex gap-2">
+            {/* Documento Oficial de Factura (Optimizado para Pantalla e Impresión A4) */}
+            <div className="p-5 sm:p-7 space-y-4 bg-white text-slate-900 text-xs">
+              {/* Encabezado RIDE: Emisor (Izquierda) + Recuadro SRI (Derecha) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start border-b border-slate-200 pb-4">
+                {/* Datos del Emisor */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-lg bg-teal-700 text-white font-black text-lg flex items-center justify-center shadow-sm">
+                      S5
+                    </div>
+                    <div>
+                      <h2 className="text-base font-black tracking-tight text-slate-900 leading-none">
+                        KOLAB TECH S.A.S.
+                      </h2>
+                      <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">
+                        Plataforma Survey 593 Ecuador
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] text-slate-600 space-y-0.5 pt-1.5 leading-relaxed">
+                    <p><strong className="text-slate-800">Dirección Matriz:</strong> Av. República del Salvador N34-127 y Naciones Unidas, Edificio Kolab Tower, Piso 8, Quito - Ecuador</p>
+                    <p><strong className="text-slate-800">Teléfono:</strong> (02) 298-4500 · <strong className="text-slate-800">Email:</strong> facturacion@kolab.ec</p>
+                    <p><strong className="text-slate-800">Obligado a Llevar Contabilidad:</strong> SÍ</p>
+                    <p><strong className="text-slate-800">Régimen Tributario:</strong> Régimen General de Sociedades</p>
+                  </div>
+                </div>
+
+                {/* Recuadro Oficial SRI */}
+                <div className="border border-slate-300 rounded-lg p-3 bg-slate-50 text-xs space-y-1">
+                  <div className="flex justify-between items-center border-b border-slate-200 pb-1">
+                    <span className="font-mono text-[11px] font-bold text-slate-700">R.U.C.:</span>
+                    <span className="font-mono font-black text-xs text-slate-950">1793204829001</span>
+                  </div>
+                  <div className="text-center py-0.5">
+                    <span className="text-sm font-black tracking-wider text-slate-900 block">FACTURA ELECTRÓNICA</span>
+                    <span className="font-mono font-bold text-slate-700 text-[11px]">No. {paymentSuccessReceipt.invoiceNumber}</span>
+                  </div>
+                  <div className="space-y-0.5 text-[9px] text-slate-600 pt-1 border-t border-slate-200">
+                    <p><strong className="text-slate-800">NÚMERO DE AUTORIZACIÓN SRI:</strong></p>
+                    <p className="font-mono font-bold text-slate-900 break-all text-[9px] leading-tight">{paymentSuccessReceipt.authCodeSRI}</p>
+                    <div className="flex justify-between pt-0.5">
+                      <span><strong className="text-slate-800">FECHA:</strong> {new Date(paymentSuccessReceipt.date).toLocaleString('es-EC')}</span>
+                      <span><strong className="text-slate-800">AMBIENTE:</strong> PRODUCCIÓN</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span><strong className="text-slate-800">EMISIÓN:</strong> NORMAL</span>
+                      <span><strong className="text-slate-800">TIPO:</strong> ELECTRÓNICA</span>
+                    </div>
+                  </div>
+
+                  {/* Clave de Acceso y Código de Barras Representativo */}
+                  <div className="pt-1.5 border-t border-slate-200 text-center">
+                    <span className="text-[8px] font-bold uppercase text-slate-500 block mb-0.5">Clave de Acceso SRI</span>
+                    <div className="h-5 w-full flex items-center justify-center gap-[2px] overflow-hidden px-1 py-0.5 bg-white border border-slate-200 rounded">
+                      {Array.from({ length: 42 }).map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={`h-full bg-slate-900 ${idx % 3 === 0 ? 'w-[2.5px]' : idx % 2 === 0 ? 'w-[1.5px]' : 'w-[1px]'}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="font-mono text-[8px] text-slate-700 mt-0.5 truncate">{paymentSuccessReceipt.authCodeSRI}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información del Cliente / Adquirente */}
+              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/80 text-[11px] grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <span className="text-slate-500 font-medium block text-[9px] uppercase">Razón Social / Cliente:</span>
+                  <span className="font-black text-slate-900 text-xs">{paymentSuccessReceipt.companyName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-medium block text-[9px] uppercase">RUC / C.I. del Cliente:</span>
+                  <span className="font-mono font-bold text-slate-900 text-xs">{paymentSuccessReceipt.ruc}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-medium block text-[9px] uppercase">Dirección:</span>
+                  <span className="font-medium text-slate-800">{paymentSuccessReceipt.address}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-medium block text-[9px] uppercase">Correo Electrónico:</span>
+                  <span className="font-medium text-slate-800">{paymentSuccessReceipt.companyEmail}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-medium block text-[9px] uppercase">Fecha de Emisión:</span>
+                  <span className="font-medium text-slate-800">{new Date(paymentSuccessReceipt.date).toLocaleDateString('es-EC', { dateStyle: 'long' })}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-medium block text-[9px] uppercase">Estado de Fondos:</span>
+                  <span className="text-emerald-700 font-bold">Acreditado en Custodia Escrow</span>
+                </div>
+              </div>
+
+              {/* Tabla de Detalle de Ítems Fondeados y Comisiones */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <table className="w-full text-left text-[11px] border-collapse">
+                  <thead className="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold uppercase text-[9px]">
+                    <tr>
+                      <th className="p-2">Cod.</th>
+                      <th className="p-2 text-center">Cant.</th>
+                      <th className="p-2">Descripción del Concepto</th>
+                      <th className="p-2 text-right">Precio Unit.</th>
+                      <th className="p-2 text-right">Desc.</th>
+                      <th className="p-2 text-right">Total USD</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 text-[11px]">
+                    <tr>
+                      <td className="p-2 font-mono text-slate-500">ESC-593</td>
+                      <td className="p-2 text-center font-semibold text-slate-700">1.00</td>
+                      <td className="p-2">
+                        <div className="font-bold text-slate-900">Custodia de Fondos para Encuestados (Bolsa Escrow 65%)</div>
+                        <div className="text-[10px] text-slate-500">
+                          Campaña: <em>"{paymentSuccessReceipt.campaignTitle}"</em> · {paymentSuccessReceipt.targetResponses} encuestados x ${paymentSuccessReceipt.rewardPerResponse.toFixed(2)} USD
+                        </div>
+                      </td>
+                      <td className="p-2 text-right font-mono text-slate-700">${paymentSuccessReceipt.escrowFund.toFixed(2)}</td>
+                      <td className="p-2 text-right font-mono text-slate-500">$0.00</td>
+                      <td className="p-2 text-right font-mono font-bold text-slate-900">${paymentSuccessReceipt.escrowFund.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-mono text-slate-500">SRV-593</td>
+                      <td className="p-2 text-center font-semibold text-slate-700">1.00</td>
+                      <td className="p-2">
+                        <div className="font-bold text-slate-900">Comisión Tecnológica y Auditoría de Calidad Survey 593 (35%)</div>
+                        <div className="text-[10px] text-slate-500">
+                          Servicios SaaS, control de calidad, verificación de respuestas y gestión de pagos SPI
+                        </div>
+                      </td>
+                      <td className="p-2 text-right font-mono text-slate-700">${paymentSuccessReceipt.platformFee.toFixed(2)}</td>
+                      <td className="p-2 text-right font-mono text-slate-500">$0.00</td>
+                      <td className="p-2 text-right font-mono font-bold text-slate-900">${paymentSuccessReceipt.platformFee.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pie de Factura: Información Adicional + Cuadro de Subtotales */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start pt-1">
+                {/* Columna Izquierda: Información Adicional y Código QR */}
+                <div className="space-y-2">
+                  <div className="border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-[10px] space-y-1">
+                    <span className="font-bold text-slate-800 uppercase tracking-wider block text-[9px] border-b border-slate-200 pb-0.5">
+                      Información Adicional & Forma de Pago
+                    </span>
+                    <p><strong className="text-slate-700">Forma de Pago:</strong> {paymentSuccessReceipt.paymentMethod}</p>
+                    <p><strong className="text-slate-700">Plazo de Pago:</strong> 0 días (Contado inmediato)</p>
+                    <p><strong className="text-slate-700">Estado de Fondos:</strong> <span className="text-emerald-700 font-bold">Verificado y en Custodia (Escrow)</span></p>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 p-2 bg-emerald-50/80 rounded-lg border border-emerald-200 text-xs">
+                    <QrCode className="w-10 h-10 text-slate-800 shrink-0" />
+                    <div className="text-[9px] text-slate-600 leading-tight">
+                      <p className="font-bold text-emerald-950 flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        Comprobante con Validez Legal SRI
+                      </p>
+                      <p className="mt-0.5 text-slate-500">
+                        Documento generado electrónicamente de conformidad con la Resolución No. NAC-DGERCGC12-00105 del Servicio de Rentas Internas del Ecuador.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Columna Derecha: Cuadro de Subtotales y Total */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden font-sans text-[11px]">
+                  <table className="w-full">
+                    <tbody className="divide-y divide-slate-200">
+                      <tr className="bg-slate-50">
+                        <td className="p-1.5 font-medium text-slate-600">SUBTOTAL 0% (Fondos Custodia Escrow):</td>
+                        <td className="p-1.5 text-right font-mono font-semibold text-slate-800">${paymentSuccessReceipt.escrowFund.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td className="p-1.5 font-medium text-slate-600">SUBTOTAL GRAVADO 15% (Comisión):</td>
+                        <td className="p-1.5 text-right font-mono font-semibold text-slate-800">${(paymentSuccessReceipt.platformFee / 1.15).toFixed(2)}</td>
+                      </tr>
+                      <tr className="bg-slate-50">
+                        <td className="p-1.5 font-medium text-slate-600">IVA 15%:</td>
+                        <td className="p-1.5 text-right font-mono font-semibold text-slate-800">${(paymentSuccessReceipt.platformFee - paymentSuccessReceipt.platformFee / 1.15).toFixed(2)}</td>
+                      </tr>
+                      <tr className="bg-teal-700 text-white font-black text-xs">
+                        <td className="p-2">VALOR TOTAL PAGADO:</td>
+                        <td className="p-2 text-right font-mono text-sm">${paymentSuccessReceipt.totalInvestment.toFixed(2)} USD</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Barra inferior de acciones (Sólo visible en pantalla) */}
+            <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex flex-col sm:flex-row gap-2 no-print">
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex-1 py-2.5 rounded-stitch bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                className="flex-1 py-2 px-4 rounded-stitch bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Imprimir Factura</span>
+                <span>Imprimir Factura Oficial / Guardar en PDF</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate('/provider/campaigns')}
-                className="flex-1 py-2.5 rounded-stitch bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors text-center"
+                className="flex-1 py-2 px-4 rounded-stitch bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
               >
-                Ver Mi Campaña 🚀
+                <span>Ver Mi Campaña Activa 🚀</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentSuccessReceipt(null)}
+                className="py-2 px-4 rounded-stitch bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold text-xs transition-colors"
+              >
+                Cerrar
               </button>
             </div>
           </div>

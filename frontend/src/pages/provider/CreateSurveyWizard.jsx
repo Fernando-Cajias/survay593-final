@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useDatabase } from '../../context/DatabaseContext';
+import { useOrganization } from '../../context/OrganizationContext';
+import { EDUCATION_TEMPLATES, BUSINESS_TEMPLATES } from '../../services/educationTemplates';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import {
@@ -24,12 +26,15 @@ import {
   Check,
   Copy,
   Clock,
+  Sparkles,
+  School,
 } from 'lucide-react';
 
 export const CreateSurveyWizard = () => {
   const navigate = useNavigate();
   const { currentUser, updateProfile } = useAuth();
   const { addSurvey } = useDatabase();
+  const { currentOrg, currentPeriod } = useOrganization();
 
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
@@ -161,6 +166,8 @@ export const CreateSurveyWizard = () => {
       // Prepare campaign
       const surveyData = {
         providerId: currentUser.id,
+        tenantId: currentOrg?.id || null,
+        periodId: currentPeriod?.id || null,
         title,
         description,
         category,
@@ -179,7 +186,7 @@ export const CreateSurveyWizard = () => {
       const receipt = {
         invoiceNumber: `FAC-001-002-00${Math.floor(100000 + Math.random() * 900000)}`,
         authCodeSRI: `179320482900120260830${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-        companyName: currentUser.company || 'Orión Technologies',
+        companyName: currentOrg?.name || currentUser.company || 'Orión Technologies',
         companyRepresentative: currentUser.name,
         companyEmail: currentUser.email,
         campaignTitle: title,
@@ -253,7 +260,52 @@ export const CreateSurveyWizard = () => {
       {/* Step 1: Info */}
       {step === 1 && (
         <div className="glass-card p-6 space-y-4 animate-fade-in">
-          <h3 className="text-base font-bold text-white mb-2">1. Información de la Campaña</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white">1. Información de la Campaña</h3>
+            {currentOrg && (
+              <span className="text-xs text-primary-light font-semibold flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5" />
+                {currentOrg.name}
+              </span>
+            )}
+          </div>
+
+          {/* Quick Template Selector Banner */}
+          <div className="p-4 rounded-stitch bg-gradient-to-r from-primary/15 via-slate-900 to-secondary/15 border border-primary/30 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-white">
+                <Sparkles className="w-4 h-4 text-primary-light" />
+                <span>¿Deseas lanzar tu encuesta en 1 clic? Selecciona una Plantilla:</span>
+              </div>
+              <Badge variant="primary" className="text-[10px]">
+                {currentOrg?.category === 'education' ? 'Colegios & Escuelas' : 'Empresas & Negocios'}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              {(currentOrg?.category === 'education' ? EDUCATION_TEMPLATES : BUSINESS_TEMPLATES).map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => {
+                    const periodSuffix = currentPeriod ? ` (${currentPeriod.name})` : '';
+                    const orgPrefix = currentOrg?.name ? `${currentOrg.name} - ` : '';
+                    setTitle(`${tpl.name} - ${orgPrefix}${periodSuffix}`.trim());
+                    setDescription(tpl.description);
+                    setCategory(tpl.category);
+                    setEstimatedTime(tpl.estimatedTime);
+                    setRewardPerResponse(tpl.rewardPerResponse);
+                    setQuestions(tpl.questions);
+                  }}
+                  className="p-2.5 rounded-stitch bg-slate-900/80 hover:bg-primary/20 border border-slate-700 hover:border-primary/60 text-left transition-all group"
+                >
+                  <div className="text-xl mb-1">{tpl.icon}</div>
+                  <div className="text-xs font-bold text-white group-hover:text-primary-light line-clamp-1">{tpl.name}</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">{tpl.questions.length} preguntas · ${tpl.rewardPerResponse.toFixed(2)}</div>
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">Título del Estudio</label>

@@ -204,6 +204,178 @@ export const EDUCATION_TEMPLATES = [
   },
 ];
 
+export const BUSINESS_TEMPLATES = [
+  {
+    id: 'estudio_mercado_sucursal',
+    name: 'Estudio de Mercado y Ubicación de Sucursal',
+    icon: '📍',
+    description: 'Evalúa la viabilidad y demanda de consumidores para abrir un nuevo local o sucursal comercial.',
+    category: 'Estudio de Mercado',
+    estimatedTime: 3,
+    rewardPerResponse: 1.50,
+    questions: [
+      {
+        type: 'multiple',
+        text: '¿Con qué frecuencia visita o consume productos/servicios de este sector?',
+        required: true,
+        options: [
+          'Varias veces por semana',
+          'Una vez por semana',
+          'Cada 15 días',
+          'Una vez al mes',
+          'Casi nunca',
+        ],
+      },
+      {
+        type: 'likert',
+        text: '¿Qué tan conveniente le resultaría contar con una sucursal en su sector o zona de residencia?',
+        required: true,
+        scale: 5,
+        labels: ['1 (Nada conveniente)', '2', '3', '4', '5 (Muy conveniente)'],
+      },
+      {
+        type: 'multiple',
+        text: '¿Qué factor considera más determinante al elegir un establecimiento comercial?',
+        required: true,
+        options: [
+          'Precios y promociones',
+          'Calidad de producto/servicio',
+          'Cercanía y parqueadero',
+          'Rapidez y atención al cliente',
+          'Seguridad de la zona',
+        ],
+      },
+      {
+        type: 'yesno',
+        text: '¿Estaría dispuesto a visitar la nueva sucursal durante el mes de inauguración?',
+        required: true,
+      },
+      {
+        type: 'text',
+        text: '¿Qué servicio o valor agregado le gustaría que ofrezca este nuevo establecimiento?',
+        required: false,
+      },
+    ],
+  },
+  {
+    id: 'satisfaccion_cliente_csat',
+    name: 'Satisfacción del Cliente y Calidad (CSAT / NPS)',
+    icon: '⭐',
+    description: 'Mide la experiencia de compra, atención recibida y probabilidad de recomendación de la marca.',
+    category: 'Satisfacción de Clientes',
+    estimatedTime: 2,
+    rewardPerResponse: 1.00,
+    questions: [
+      {
+        type: 'likert',
+        text: '¿Cómo califica su nivel general de satisfacción con nuestra empresa / servicio?',
+        required: true,
+        scale: 5,
+        labels: ['1 (Muy insatisfecho)', '2', '3', '4', '5 (Completamente satisfecho)'],
+      },
+      {
+        type: 'likert',
+        text: '¿Qué tan probable es que recomiende nuestros servicios a un colega, amigo o familiar?',
+        required: true,
+        scale: 5,
+        labels: ['1 (Improbable)', '2', '3', '4', '5 (Totalmente seguro)'],
+      },
+      {
+        type: 'yesno',
+        text: '¿El tiempo de espera o entrega cumplió con sus expectativas?',
+        required: true,
+      },
+      {
+        type: 'text',
+        text: '¿Qué podríamos hacer para mejorar su próxima experiencia con nosotros?',
+        required: false,
+      },
+    ],
+  },
+  {
+    id: 'clima_laboral',
+    name: 'Clima Laboral y Diagnóstico de Personal',
+    icon: '👥',
+    description: 'Mide el bienestar, liderazgo, herramientas y compromiso de los colaboradores de la empresa.',
+    category: 'Clima Laboral',
+    estimatedTime: 4,
+    rewardPerResponse: 2.00,
+    questions: [
+      {
+        type: 'likert',
+        text: '¿Siente que cuenta con las herramientas y recursos necesarios para realizar su trabajo eficientemente?',
+        required: true,
+        scale: 5,
+        labels: ['1 (Totalmente en desacuerdo)', '2', '3', '4', '5 (Totalmente de acuerdo)'],
+      },
+      {
+        type: 'likert',
+        text: '¿Cómo califica la comunicación y el apoyo por parte de su líder o supervisor directo?',
+        required: true,
+        scale: 5,
+        labels: ['1 (Muy deficiente)', '2', '3', '4', '5 (Excelente)'],
+      },
+      {
+        type: 'yesno',
+        text: '¿Se siente motivado y valorado en su puesto actual dentro de la organización?',
+        required: true,
+      },
+      {
+        type: 'multiple',
+        text: '¿En qué área considera que la empresa debería enfocar sus mejoras de clima interno?',
+        required: true,
+        options: [
+          'Equilibrio trabajo-vida personal',
+          'Oportunidades de capacitación y crecimiento',
+          'Beneficios e incentivos',
+          'Infraestructura y puestos de trabajo',
+          'Comunicación interna y feedback',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'test_producto_nuevo',
+    name: 'Validación de Nuevo Producto / Servicio',
+    icon: '🚀',
+    description: 'Prueba la aceptación de mercado, disposición a pagar y atributos clave antes del lanzamiento.',
+    category: 'Innovación y Producto',
+    estimatedTime: 3,
+    rewardPerResponse: 1.50,
+    questions: [
+      {
+        type: 'likert',
+        text: '¿Qué tan atractivo e innovador le parece el concepto de este nuevo producto/servicio?',
+        required: true,
+        scale: 5,
+        labels: ['1 (Poco atractivo)', '2', '3', '4', '5 (Muy atractivo)'],
+      },
+      {
+        type: 'yesno',
+        text: '¿Compraría o contrataría este servicio dentro de los próximos 3 meses si estuviera disponible?',
+        required: true,
+      },
+      {
+        type: 'multiple',
+        text: '¿Cuál considera que es el principal beneficio de esta propuesta?',
+        required: true,
+        options: [
+          'Ahorro de tiempo',
+          'Ahorro de dinero / mejor precio',
+          'Mayor calidad o tecnología',
+          'Comodidad y accesibilidad',
+          'Exclusividad',
+        ],
+      },
+      {
+        type: 'text',
+        text: '¿Tiene alguna sugerencia para que este producto resuelva mejor sus necesidades?',
+        required: false,
+      },
+    ],
+  },
+];
+
 // Default academic periods for Ecuador
 export const DEFAULT_ACADEMIC_PERIODS = [
   { name: 'Año Lectivo 2023-2024', startDate: '2023-09-01', endDate: '2024-07-15' },

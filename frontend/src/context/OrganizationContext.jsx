@@ -63,6 +63,9 @@ export const OrganizationProvider = ({ children }) => {
             rectorName: o.rector_name,
             phone: o.phone,
             email: o.email,
+            category: o.category || (o.type === 'school' ? 'education' : 'business'),
+            industry: o.industry || '',
+            ruc: o.ruc || '',
             plan: o.plan,
             active: o.active,
             createdAt: o.created_at,
@@ -117,11 +120,15 @@ export const OrganizationProvider = ({ children }) => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
+    const isBiz = orgData.category === 'business';
     const newOrg = {
       id: `org_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
       name: orgData.name.trim(),
       slug,
-      type: orgData.type || 'school',
+      type: orgData.type || (isBiz ? 'empresa_privada' : 'school'),
+      category: orgData.category || (isBiz ? 'business' : 'education'),
+      industry: orgData.industry || '',
+      ruc: orgData.ruc || '',
       city: orgData.city || 'Quito',
       address: orgData.address || '',
       rectorName: orgData.rectorName || '',
@@ -135,14 +142,23 @@ export const OrganizationProvider = ({ children }) => {
     setOrganizations((prev) => [newOrg, ...prev]);
     setCurrentOrg(newOrg);
 
-    // Create default academic periods for this org
-    const defaultPeriods = DEFAULT_ACADEMIC_PERIODS.map((p, idx) => ({
+    // Create periods for this org (academic for schools, annual/fiscal for businesses)
+    const basePeriods = isBiz
+      ? [
+          { name: 'Ejercicio 2024', startDate: '2024-01-01', endDate: '2024-12-31' },
+          { name: 'Ejercicio 2025', startDate: '2025-01-01', endDate: '2025-12-31' },
+          { name: 'Ejercicio 2026', startDate: '2026-01-01', endDate: '2026-12-31' },
+          { name: 'Ejercicio 2027', startDate: '2027-01-01', endDate: '2027-12-31' },
+        ]
+      : DEFAULT_ACADEMIC_PERIODS;
+
+    const defaultPeriods = basePeriods.map((p, idx) => ({
       id: `period_${newOrg.id}_${idx}`,
       organizationId: newOrg.id,
       name: p.name,
       startDate: p.startDate,
       endDate: p.endDate,
-      isCurrent: p.name === getCurrentPeriod()?.name,
+      isCurrent: isBiz ? p.name === 'Ejercicio 2026' : p.name === getCurrentPeriod()?.name,
       createdAt: new Date().toISOString(),
     }));
 

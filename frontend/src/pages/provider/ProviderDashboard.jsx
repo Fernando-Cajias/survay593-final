@@ -49,25 +49,40 @@ export const ProviderDashboard = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Institution Header with Period Selector */}
+      {/* Institution / Company Header with Period Selector */}
       {currentOrg ? (
         <div className="glass-card p-5 bg-gradient-to-r from-primary/10 via-slate-800/50 to-secondary/10 border-primary/20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-stitch bg-primary/20 border border-primary/40 flex items-center justify-center">
-                <School className="w-6 h-6 text-primary-light" />
+                {currentOrg.category === 'business' ? (
+                  <Building2 className="w-6 h-6 text-primary-light" />
+                ) : (
+                  <School className="w-6 h-6 text-primary-light" />
+                )}
               </div>
               <div>
-                <h1 className="text-xl font-black text-white">{currentOrg.name}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-black text-white">{currentOrg.name}</h1>
+                  <Badge variant={currentOrg.category === 'business' ? 'secondary' : 'primary'} className="text-[10px]">
+                    {currentOrg.category === 'business' ? 'Empresa' : 'Sector Educativo'}
+                  </Badge>
+                </div>
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Building2 className="w-3 h-3" />
-                  <span>{currentOrg.type === 'school' ? 'Escuela' : currentOrg.type === 'unidad_educativa' ? 'Unidad Educativa' : currentOrg.type === 'colegio' ? 'Colegio' : 'Institución'}</span>
+                  <span className="capitalize">{currentOrg.type ? currentOrg.type.replace(/_/g, ' ') : 'Institución'}</span>
                   <span>·</span>
                   <span>{currentOrg.city}</span>
+                  {currentOrg.industry && (
+                    <>
+                      <span>·</span>
+                      <span>{currentOrg.industry}</span>
+                    </>
+                  )}
                   {currentOrg.rectorName && (
                     <>
                       <span>·</span>
-                      <span>Dir: {currentOrg.rectorName}</span>
+                      <span>{currentOrg.category === 'business' ? 'Rep:' : 'Dir:'} {currentOrg.rectorName}</span>
                     </>
                   )}
                 </div>
@@ -76,20 +91,22 @@ export const ProviderDashboard = () => {
 
             <div className="flex items-center gap-3">
               {/* Period Selector */}
-              <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-stitch border border-slate-700">
-                <Calendar className="w-4 h-4 text-primary-light" />
-                <select
-                  value={currentPeriod?.id || ''}
-                  onChange={(e) => switchPeriod(e.target.value)}
-                  className="bg-transparent text-xs text-white font-bold focus:outline-none cursor-pointer"
-                >
-                  {periods.map((p) => (
-                    <option key={p.id} value={p.id} className="bg-slate-900">
-                      {p.name} {p.isCurrent ? '(Actual)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {periods && periods.length > 0 && (
+                <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-stitch border border-slate-700">
+                  <Calendar className="w-4 h-4 text-primary-light" />
+                  <select
+                    value={currentPeriod?.id || ''}
+                    onChange={(e) => switchPeriod(e.target.value)}
+                    className="bg-transparent text-xs text-white font-bold focus:outline-none cursor-pointer"
+                  >
+                    {periods.map((p) => (
+                      <option key={p.id} value={p.id} className="bg-slate-900">
+                        {p.name} {p.isCurrent ? '(Actual)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <Link to="/provider/studio">
                 <Button size="sm" variant="secondary" icon={Palette}>
@@ -107,20 +124,30 @@ export const ProviderDashboard = () => {
       ) : (
         /* Onboarding Prompt */
         <div className="glass-card p-8 text-center border-dashed border-2 border-primary/40 bg-primary/5">
-          <School className="w-12 h-12 text-primary-light mx-auto mb-3" />
-          <h2 className="text-xl font-black text-white mb-2">¡Bienvenido! Configura tu Institución Educativa</h2>
+          <Building2 className="w-12 h-12 text-primary-light mx-auto mb-3" />
+          <h2 className="text-xl font-black text-white mb-2">¡Bienvenido! Configura tu Organización</h2>
           <p className="text-xs text-slate-400 max-w-md mx-auto mb-5">
-            Registra los datos de tu colegio o escuela para activar el sistema Multi-Tenant y comenzar a crear encuestas con plantillas educativas profesionales.
+            Registra tu <strong className="text-white">colegio, escuela o empresa</strong> para activar el sistema Multi-Tenant y comenzar a recopilar inteligencia estratégica y control de calidad.
           </p>
-          <Button
-            size="lg"
-            variant="primary"
-            icon={ArrowRight}
-            onClick={() => navigate('/provider/onboarding')}
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black"
-          >
-            Registrar Mi Institución en 3 Pasos 🏫
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              size="lg"
+              variant="primary"
+              icon={ArrowRight}
+              onClick={() => navigate('/provider/onboarding')}
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-lg"
+            >
+              🏫 Institución Educativa
+            </Button>
+            <Button
+              size="lg"
+              variant="secondary"
+              icon={ArrowRight}
+              onClick={() => navigate('/provider/onboarding')}
+            >
+              🏢 Empresa / Negocio
+            </Button>
+          </div>
         </div>
       )}
 

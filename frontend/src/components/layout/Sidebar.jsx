@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useOrganization } from '../../context/OrganizationContext';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -16,10 +17,13 @@ import {
   Sparkles,
   Layers,
   LogOut,
+  School,
+  Building2,
 } from 'lucide-react';
 
 export const Sidebar = () => {
   const { currentUser, logout } = useAuth();
+  const { currentOrg } = useOrganization();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -48,9 +52,14 @@ export const Sidebar = () => {
       case 'provider':
         return [
           {
-            section: 'Panel Empresa',
+            section: currentOrg?.category === 'education' ? 'Panel Institucional' : 'Panel Empresa',
             items: [
               { label: 'Dashboard', icon: LayoutDashboard, path: '/provider' },
+              {
+                label: currentOrg ? 'Mi Organización' : 'Registrar Organización',
+                icon: currentOrg?.category === 'education' ? School : Building2,
+                path: '/provider/onboarding',
+              },
               { label: 'Crear Encuesta', icon: PlusCircle, path: '/provider/create' },
               { label: 'Mis Campañas', icon: ClipboardList, path: '/provider/campaigns' },
             ],
@@ -108,11 +117,20 @@ export const Sidebar = () => {
           <div className="w-10 h-10 rounded-stitch bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-extrabold text-white text-lg shadow-glow-sm">
             S5
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="font-extrabold text-white text-base tracking-tight leading-none">Survey 593</h2>
-            <span className="text-[11px] text-primary-light font-semibold uppercase tracking-wider">
-              {currentUser.role === 'provider' ? 'Empresa' : currentUser.role === 'admin' ? 'Admin Kolab' : 'Encuestado'}
-            </span>
+            {currentUser.role === 'provider' && currentOrg ? (
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
+                <span className="text-[11px] text-slate-300 font-semibold truncate block" title={currentOrg.name}>
+                  {currentOrg.name}
+                </span>
+              </div>
+            ) : (
+              <span className="text-[11px] text-primary-light font-semibold uppercase tracking-wider block mt-0.5">
+                {currentUser.role === 'provider' ? 'Organización' : currentUser.role === 'admin' ? 'Admin Kolab' : 'Encuestado'}
+              </span>
+            )}
           </div>
         </div>
 

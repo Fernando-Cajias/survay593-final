@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import {
   Building2,
@@ -14,7 +15,6 @@ import {
   Target,
   MapPin,
   Sliders,
-  Download,
   School,
   GraduationCap,
   Coins,
@@ -22,25 +22,126 @@ import {
   Check,
   Layers,
   Globe,
-  FileText,
   Lock,
   Award,
-  Search,
   Zap,
   Briefcase,
-  Smartphone,
+  DollarSign,
+  X,
+  User,
+  Mail,
   PieChart,
-  HelpCircle,
 } from 'lucide-react';
 
 // =========================================================================
-// DATOS DEMOSTRATIVOS INTERACTIVOS PARA EL DASHBOARD EMPRESARIAL
+// OPORTUNIDADES REALES GEOLOCALIZADAS EN ECUADOR (EL RADAR DE SEDUCCIÓN)
+// =========================================================================
+const OPPORTUNITIES = [
+  {
+    id: 'opp_1',
+    city: 'Quito',
+    locationName: 'C.C. El Jardín / Av. Amazonas',
+    title: 'Auditoría de Marcas de Ropa y Experiencia',
+    sponsor: 'Textil Andina S.A.',
+    reward: 5.0,
+    timeMinutes: 3,
+    category: 'Moda y Retail',
+    missionDescription: 'Tu misión consiste en evaluar la experiencia de compra en tiendas de moda en el norte de Quito y responder 3 preguntas breves.',
+    coordinates: { top: '38%', left: '46%' },
+    question1: '¿En cuál de estos centros comerciales compraste ropa o calzado en los últimos 3 meses?',
+    options1: [
+      'C.C. El Jardín o CCI (Norte)',
+      'Quicentro Shopping / La Carolina',
+      'Tiendas independientes / Locales de barrio',
+      'Por internet / Instagram / WhatsApp',
+    ],
+  },
+  {
+    id: 'opp_2',
+    city: 'Quito',
+    locationName: 'Quicentro Shopping / La Carolina',
+    title: 'Preferencia de Calzado Deportivo Juvenil',
+    sponsor: 'Calzado Ecuatoriano C.A.',
+    reward: 3.5,
+    timeMinutes: 2,
+    category: 'Deportes y Estilo',
+    missionDescription: 'Tu misión consiste en compartir tus preferencias de precio y marcas en calzado urbano deportivo.',
+    coordinates: { top: '30%', left: '52%' },
+    question1: '¿Cuánto sueles gastar en promedio en un par de zapatillas deportivas?',
+    options1: [
+      'Menos de $40 USD',
+      'Entre $40 y $75 USD',
+      'Entre $75 y $120 USD',
+      'Más de $120 USD',
+    ],
+  },
+  {
+    id: 'opp_3',
+    city: 'Guayaquil',
+    locationName: 'Mall del Sol / Av. Joaquín Orrantia',
+    title: 'Estudio de Consumo en Restaurantes y Cafés',
+    sponsor: 'Grupo Gastronómico Guayas',
+    reward: 10.0,
+    timeMinutes: 4,
+    category: 'Alimentos y Bebidas',
+    missionDescription: 'Tu misión consiste en responder sobre hábitos de comida familiar y consumo en patios de comidas en Guayaquil.',
+    coordinates: { top: '64%', left: '36%' },
+    question1: '¿Con qué frecuencia sales a comer en centros comerciales con tu familia?',
+    options1: [
+      '1 a 2 veces por semana',
+      'Fines de semana exclusivamente',
+      '1 a 2 veces al mes',
+      'Rara vez o solo ocasiones especiales',
+    ],
+  },
+  {
+    id: 'opp_4',
+    city: 'Cuenca',
+    locationName: 'Centro Histórico / Parque Calderón',
+    title: 'Evaluación de Servicios Cafeteros y Postres',
+    sponsor: 'Café Austral Cuencano',
+    reward: 4.0,
+    timeMinutes: 3,
+    category: 'Gastronomía Local',
+    missionDescription: 'Tu misión consiste en calificar el ambiente, conectividad wifi y calidad del café en cafeterías tradicionales.',
+    coordinates: { top: '76%', left: '48%' },
+    question1: '¿Qué factor consideras más importante al elegir una cafetería para pasar la tarde?',
+    options1: [
+      'Calidad del café de especialidad',
+      'Buen internet y ambiente tranquilo para trabajar',
+      'Precios accesibles y promociones',
+      'Variedad de postres y pastelería tradicional',
+    ],
+  },
+  {
+    id: 'opp_5',
+    city: 'Todo Ecuador',
+    locationName: 'Online · Desde tu celular en casa',
+    title: 'Encuesta Rápida de Métodos de Pago Digitales',
+    sponsor: 'Fintech Ecuador Digital',
+    reward: 2.5,
+    timeMinutes: 2,
+    category: 'Banca y Tecnología',
+    missionDescription: 'Tu misión consiste en calificar la rapidez y comodidad de los pagos con código QR y transferencias inmediatas.',
+    coordinates: { top: '50%', left: '68%' },
+    question1: '¿Cuál es tu método de pago preferido para compras diarias en tiendas físicas?',
+    options1: [
+      'DeUna / Transferencia directa Banco Pichincha',
+      'Tarjeta de débito o crédito física',
+      'Efectivo billetes y monedas',
+      'Billeteras virtuales (Payphone / PeiGo)',
+    ],
+  },
+];
+
+// =========================================================================
+// CASOS DE ESTUDIO DEMOSTRATIVOS PARA EL BI STUDIO EMPRESARIAL
 // =========================================================================
 const INDUSTRY_STUDIES = [
   {
     id: 'retail',
     tag: 'Consumo Masivo & Retail',
-    icon: ShoppingBagIcon,
+    icon: Briefcase,
     title: 'Estudio de Hábitos de Compra y Percepción de Marca 2026',
     sponsor: 'Corporación Retail Andina',
     sampleSize: '1,850 respuestas verificadas',
@@ -62,7 +163,7 @@ const INDUSTRY_STUDIES = [
   },
   {
     id: 'education',
-    tag: 'Sector Educativo (Colegios y Universidades)',
+    tag: 'Sector Educativo (Colegios & Universidades)',
     icon: School,
     title: 'Auditoría de Clima Académico y Satisfacción Docente Quimestre II',
     sponsor: 'Colegio y Unidad Educativa Benalcázar',
@@ -108,7 +209,7 @@ const INDUSTRY_STUDIES = [
   },
   {
     id: 'health',
-    tag: 'Salud & Servicios Médicos',
+    tag: 'Salud & Cadenas Farmacéuticas',
     icon: ShieldCheck,
     title: 'Evaluación de Experiencia y Disponibilidad en Cadenas de Farmacias',
     sponsor: 'Grupo Salud Integral',
@@ -131,14 +232,24 @@ const INDUSTRY_STUDIES = [
   },
 ];
 
-function ShoppingBagIcon(props) {
-  return <Briefcase {...props} />;
-}
-
 export const LandingPage = () => {
+  const { register } = useAuth();
   const navigate = useNavigate();
 
-  // Selected Tab in Interactive Preview
+  // Radar Map States
+  const [selectedCity, setSelectedCity] = useState('Todos');
+  const [activeMission, setActiveMission] = useState(null);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [step, setStep] = useState(1); // 1: responder pregunta gancho, 2: registro sin fricción
+
+  // Form fields for instant claim
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [claimLoading, setClaimLoading] = useState(false);
+
+  // BI Studio Tab State
   const [activeTabId, setActiveTabId] = useState('retail');
   const activeStudy = useMemo(
     () => INDUSTRY_STUDIES.find((s) => s.id === activeTabId) || INDUSTRY_STUDIES[0],
@@ -149,6 +260,14 @@ export const LandingPage = () => {
   const [simObjective, setSimObjective] = useState('mercado');
   const [simRegion, setSimRegion] = useState('nacional');
   const [simSampleSize, setSimSampleSize] = useState(500);
+
+  // Filtered Opportunities on the Radar
+  const filteredOpportunities =
+    selectedCity === 'Todos'
+      ? OPPORTUNITIES
+      : OPPORTUNITIES.filter((o) => o.city === selectedCity || o.city === 'Todo Ecuador');
+
+  const totalRewardsAvailable = OPPORTUNITIES.reduce((acc, curr) => acc + curr.reward, 0);
 
   // Dynamic calculations for simulator
   const simMarginError = useMemo(() => {
@@ -165,12 +284,55 @@ export const LandingPage = () => {
     return '4 a 8 horas';
   }, [simSampleSize]);
 
+  // ==========================================
+  // HANDLERS DEL FLUJO DE SEDUCCIÓN (EL INGE)
+  // ==========================================
+  const handleOpenMission = (opp) => {
+    setActiveMission(opp);
+    setSelectedAnswer(null);
+    setStep(1);
+    setError('');
+  };
+
+  const handleSelectOption = (opt) => {
+    setSelectedAnswer(opt);
+    // Transición suave al paso 2: la respuesta ya está capturada, cero fricción inicial
+    setTimeout(() => {
+      setStep(2);
+    }, 450);
+  };
+
+  const handleClaimMoney = async (e) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password) {
+      setError('Por favor ingresa todos los campos para transferir tus fondos a tu billetera.');
+      return;
+    }
+
+    setClaimLoading(true);
+    const res = await register({
+      name: name.trim(),
+      email: email.trim(),
+      password,
+      role: 'doer',
+      city: activeMission.city === 'Todo Ecuador' ? 'Quito' : activeMission.city,
+      initialBalance: activeMission.reward,
+    });
+    setClaimLoading(false);
+
+    if (res.success) {
+      navigate('/doer/wallet');
+    } else {
+      setError(res.message || 'Error registrando la cuenta.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#070B14] text-slate-100 flex flex-col justify-between selection:bg-teal-500 selection:text-white font-sans overflow-x-hidden">
       
-      {/* Background Ambient Lights */}
+      {/* Background Ambient Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-gradient-to-b from-teal-500/10 via-indigo-500/5 to-transparent rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute top-[800px] -right-40 w-[600px] h-[600px] bg-teal-600/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-[900px] -right-40 w-[600px] h-[600px] bg-teal-600/5 rounded-full blur-[140px] pointer-events-none" />
 
       {/* ========================================================================= */}
       {/* 1. TOP CORPORATE NAVIGATION BAR                                          */}
@@ -195,11 +357,14 @@ export const LandingPage = () => {
 
           {/* Nav Links Desktop */}
           <div className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-400">
-            <a href="#soluciones" className="hover:text-white transition-colors">Soluciones</a>
+            <a href="#radar" className="text-teal-400 hover:text-teal-300 font-bold flex items-center gap-1.5 transition-colors">
+              <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping" />
+              <span>Radar en Vivo</span>
+            </a>
+            <a href="#soluciones" className="hover:text-white transition-colors">Soluciones B2B</a>
             <a href="#demo" className="hover:text-white transition-colors">BI Studio</a>
             <a href="#simulador" className="hover:text-white transition-colors">Simulador</a>
             <a href="#ecosistema" className="hover:text-white transition-colors">Ecosistema</a>
-            <a href="#seguridad" className="hover:text-white transition-colors">Seguridad</a>
           </div>
         </div>
 
@@ -225,17 +390,17 @@ export const LandingPage = () => {
       </nav>
 
       {/* ========================================================================= */}
-      {/* 2. HERO SECTION: LA PROPUESTA DE VALOR QUE VENDE                          */}
+      {/* 2. HERO: VALOR ESTRATÉGICO Y ENTRADA AL RADAR DE SEDUCCIÓN               */}
       {/* ========================================================================= */}
-      <header className="pt-32 pb-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10 text-center">
+      <header className="pt-28 pb-8 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10 text-center">
         {/* Category Pill */}
-        <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-teal-300 text-xs font-bold mb-6 shadow-sm animate-fade-in">
+        <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-teal-300 text-xs font-bold mb-4 shadow-sm animate-fade-in">
           <span className="flex h-2 w-2 rounded-full bg-teal-400 animate-ping" />
-          <span>Inteligencia de Mercado y Analítica Demográfica en Tiempo Real · Ecuador</span>
+          <span>Ecosistema de Investigación Georreferenciada · Ecuador</span>
         </div>
 
         {/* Main Title */}
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12] max-w-4xl mx-auto mb-6">
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12] max-w-4xl mx-auto mb-4">
           Decisiones Estratégicas Basadas en la{' '}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-emerald-300 to-teal-200">
             Opinión Real del Mercado Ecuatoriano
@@ -243,88 +408,366 @@ export const LandingPage = () => {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-slate-300 text-sm sm:text-base lg:text-lg max-w-3xl mx-auto leading-relaxed mb-10 font-normal">
-          Conectamos a empresas, marcas de consumo masivo, colegios y universidades con miles de ciudadanos verificados en las 24 provincias. Obtén datos representativos, segmentación precisa y tableros interactivos en menos de 24 horas.
+        <p className="text-slate-300 text-xs sm:text-sm lg:text-base max-w-3xl mx-auto leading-relaxed mb-6 font-normal">
+          Empresas y colegios publican misiones y estudios representativos en el mapa; miles de ciudadanos verificados responden en tiempo real recibiendo compensaciones directas.
         </p>
 
-        {/* Dual CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
-          <Link to="/login" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              className="w-full sm:w-auto py-3.5 px-7 font-black text-sm shadow-xl shadow-teal-500/25 flex items-center justify-center gap-2 group"
-            >
-              <Building2 className="w-4 h-4" />
-              <span>Crear Estudio Empresarial</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
-
-          <a href="#demo" className="w-full sm:w-auto">
-            <button className="w-full sm:w-auto py-3 px-6 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 font-bold text-sm transition-all flex items-center justify-center gap-2">
-              <BarChart3 className="w-4 h-4 text-teal-400" />
-              <span>Explorar Demo de Analítica en Vivo</span>
-            </button>
-          </a>
-
-          <Link to="/login" className="w-full sm:w-auto">
-            <button className="w-full sm:w-auto py-3 px-5 rounded-xl bg-slate-950/60 hover:bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 font-semibold text-xs transition-all flex items-center justify-center gap-2">
-              <Users className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Comunidad de Encuestados 593</span>
-            </button>
-          </Link>
-        </div>
-
-        {/* Key Platform Metric Badges */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-6 border-t border-slate-800/80 text-left">
-          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80">
-            <div className="flex items-center gap-2 text-teal-400 mb-1">
-              <Users className="w-4 h-4" />
-              <span className="text-xl sm:text-2xl font-black text-white">+25,000</span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium">Ciudadanos y hogares verificados en todo el país</p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80">
-            <div className="flex items-center gap-2 text-emerald-400 mb-1">
-              <Clock className="w-4 h-4" />
-              <span className="text-xl sm:text-2xl font-black text-white">&lt; 24h</span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium">Tiempo promedio de entrega de resultados representativos</p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80">
-            <div className="flex items-center gap-2 text-indigo-400 mb-1">
-              <MapPin className="w-4 h-4" />
-              <span className="text-xl sm:text-2xl font-black text-white">24 Provincias</span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium">Cobertura urbana y rural segmentada por cantones</p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80">
-            <div className="flex items-center gap-2 text-teal-300 mb-1">
-              <ShieldCheck className="w-4 h-4" />
-              <span className="text-xl sm:text-2xl font-black text-white">99.4%</span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium">Precisión antifraude con validación biométrica/dispositivo</p>
-          </div>
+        {/* Quick Ticker of Available Rewards */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold mb-6 shadow-glow-sm">
+          <Sparkles className="w-4 h-4 text-emerald-400" />
+          <span>${totalRewardsAvailable.toFixed(2)} USD disponibles ahora mismo en misiones y estudios activos</span>
         </div>
       </header>
 
       {/* ========================================================================= */}
-      {/* 3. INTERACTIVE LIVE MARKET INTELLIGENCE PREVIEW (THE ENTERPRISE HOOK)     */}
+      {/* 3. EL RADAR DE SEDUCCIÓN (LA VISIÓN DEL INGE: CERO TRABAS, CLIC DIRECTO)   */}
       {/* ========================================================================= */}
-      <section id="demo" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10">
+      <section id="radar" className="pb-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10">
+        
+        {/* City Filter Pills */}
+        <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+          {['Todos', 'Quito', 'Guayaquil', 'Cuenca', 'Todo Ecuador'].map((city) => (
+            <button
+              key={city}
+              onClick={() => setSelectedCity(city)}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                selectedCity === city
+                  ? 'bg-teal-500 text-slate-950 shadow-lg shadow-teal-500/30 scale-105 font-black'
+                  : 'bg-slate-900/90 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+              }`}
+            >
+              {city === 'Todos' ? '🗺️ Todo el Mapa' : city === 'Todo Ecuador' ? '⚡ Desde Casa (Online)' : `📍 ${city}`}
+            </button>
+          ))}
+        </div>
+
+        {/* Radar and Missions Grid */}
+        <div className="grid lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Visual Interactive Radar (7 Cols) */}
+          <div className="lg:col-span-7 bg-[#0B1222] border border-slate-700/80 rounded-3xl p-5 relative overflow-hidden shadow-2xl min-h-[490px] flex flex-col justify-between">
+            {/* Background Grid and Radar Waves */}
+            <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-teal-500/15 rounded-full pointer-events-none animate-pulse" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 border border-emerald-500/20 rounded-full pointer-events-none" />
+
+            {/* Header of Radar */}
+            <div className="relative z-10 flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-ping" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  Radar en Tiempo Real · Misiones en Ecuador
+                </span>
+              </div>
+              <div className="text-[11px] font-semibold text-teal-400 bg-teal-500/10 px-2.5 py-1 rounded-full border border-teal-500/20">
+                {filteredOpportunities.length} puntos activos en mapa
+              </div>
+            </div>
+
+            {/* Map Canvas with Floating Pulsing Money Pins */}
+            <div className="relative z-10 my-4 h-[350px] w-full bg-slate-950/70 rounded-2xl border border-slate-800/80 overflow-hidden flex items-center justify-center">
+              {/* Country Silhouette Watermark */}
+              <div className="text-slate-800/70 text-[85px] font-black select-none pointer-events-none tracking-widest opacity-25">
+                ECUADOR
+              </div>
+
+              {/* Dynamic Interactive Money Pins */}
+              {filteredOpportunities.map((opp) => (
+                <div
+                  key={opp.id}
+                  style={{ top: opp.coordinates.top, left: opp.coordinates.left }}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-20"
+                  onClick={() => handleOpenMission(opp)}
+                >
+                  {/* Glowing Radar Waves */}
+                  <span className="absolute -inset-2 rounded-full bg-teal-400/25 animate-ping" />
+                  
+                  {/* Pin Bubble */}
+                  <div className="relative flex items-center gap-1.5 bg-gradient-to-r from-teal-500 to-emerald-400 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-full shadow-xl shadow-teal-500/30 border border-teal-200 hover:scale-115 transition-transform duration-200">
+                    <DollarSign className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>+{opp.reward.toFixed(2)}</span>
+                  </div>
+
+                  {/* Tooltip on Hover */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-52 p-2.5 rounded-xl bg-[#0F172A] border border-teal-500/40 shadow-2xl text-center z-30 pointer-events-none animate-scale-in">
+                    <p className="text-[11px] font-bold text-white leading-tight">{opp.title}</p>
+                    <p className="text-[10px] text-teal-400 font-semibold mt-1">
+                      {opp.locationName} · {opp.timeMinutes} min
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Live Ticker at Bottom */}
+            <div className="relative z-10 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <span className="font-bold text-slate-300">Última acreditación:</span>
+                <span className="text-teal-400 font-semibold truncate">
+                  David C. en Quito acreditó $15.00 a Banco Pichincha hace 4 min
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">100% Verificado</span>
+            </div>
+          </div>
+
+          {/* Opportunities List & Enterprise Callout (5 Cols) */}
+          <div className="lg:col-span-5 space-y-3.5">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-teal-400" />
+                <span>Haz clic para explorar y participar de una</span>
+              </h2>
+              <span className="text-[11px] text-slate-400">Toca para abrir</span>
+            </div>
+
+            {filteredOpportunities.map((opp) => (
+              <div
+                key={opp.id}
+                onClick={() => handleOpenMission(opp)}
+                className="p-4 rounded-2xl bg-[#0F172A] hover:bg-slate-850 border border-slate-800 hover:border-teal-500/50 transition-all cursor-pointer group shadow-md hover:shadow-teal-500/10"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400 mb-1">
+                      <MapPin className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
+                      <span className="truncate">{opp.locationName}</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-white group-hover:text-teal-300 transition-colors line-clamp-1">
+                      {opp.title}
+                    </h3>
+                    <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        {opp.timeMinutes} min
+                      </span>
+                      <span>•</span>
+                      <span className="text-slate-400">{opp.sponsor}</span>
+                    </div>
+                  </div>
+
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-black text-teal-300 bg-teal-500/10 px-2.5 py-1 rounded-lg border border-teal-500/30">
+                      +${opp.reward.toFixed(2)}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-1 font-medium group-hover:text-white transition-colors flex items-center justify-end gap-0.5">
+                      <span>Iniciar</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Banner for Business / Institution Owners */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-500/15 via-slate-900 to-indigo-500/15 border border-teal-500/30 mt-4 text-center space-y-2">
+              <p className="text-xs font-bold text-white">¿Tienes un negocio, colegio o empresa?</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Lanza tu estudio o encuesta geolocalizada en este mapa y obtén respuestas de clientes reales en 24 horas.
+              </p>
+              <Link to="/login" className="block pt-1">
+                <Button size="sm" variant="primary" className="w-full text-xs font-bold shadow-lg shadow-teal-500/20">
+                  Publicar Estudio Empresarial en Survey 593 🚀
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* POPUP / MODAL: LA MISIÓN DE SEDUCCIÓN (LA LÓGICA DEL INGE)                */}
+      {/* ========================================================================= */}
+      {activeMission && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-lg bg-[#0F172A] border border-teal-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl relative animate-scale-in my-auto">
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setActiveMission(null)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* PASO 1: LA SEDUCCIÓN (CERO TRABAS, RESPONDER 1 SOLA PREGUNTA GANCHO) */}
+            {step === 1 && (
+              <div>
+                <div className="flex items-center gap-2 text-xs font-bold text-teal-400 mb-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>{activeMission.locationName}</span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-black text-white mb-2 leading-tight">
+                  {activeMission.title}
+                </h3>
+
+                {/* Reward Banner */}
+                <div className="flex items-center gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-5">
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-slate-400">Recompensa al completar</div>
+                    <div className="text-2xl font-black text-teal-400 flex items-center">
+                      +${activeMission.reward.toFixed(2)} USD
+                    </div>
+                  </div>
+                  <div className="border-l border-slate-800 pl-4 text-xs text-slate-300">
+                    <p className="font-bold text-white">{activeMission.sponsor}</p>
+                    <p className="text-[11px] text-slate-400">Tiempo estimado: {activeMission.timeMinutes} minutos</p>
+                  </div>
+                </div>
+
+                {/* The Inge's explanation */}
+                <div className="p-3.5 bg-teal-500/10 border border-teal-500/20 rounded-xl text-teal-200 text-xs mb-5 leading-relaxed">
+                  <strong className="text-white block mb-0.5">Instrucciones de la Misión:</strong>
+                  {activeMission.missionDescription}
+                </div>
+
+                {/* The First Question */}
+                <div className="mb-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-2">
+                    Pregunta 1 de 3 (Toca tu respuesta para comenzar):
+                  </p>
+                  <p className="text-sm font-semibold text-white mb-3">{activeMission.question1}</p>
+
+                  <div className="space-y-2">
+                    {activeMission.options1.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSelectOption(opt)}
+                        className={`w-full text-left p-3.5 rounded-xl border transition-all text-xs font-medium ${
+                          selectedAnswer === opt
+                            ? 'border-teal-400 bg-teal-500/20 text-white font-bold shadow-glow-sm'
+                            : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-600 hover:bg-slate-900'
+                        }`}
+                      >
+                        <span className="inline-block w-5 font-bold text-teal-400">
+                          {String.fromCharCode(65 + idx)}.
+                        </span>
+                        <span>{opt}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-center text-slate-400 mt-4">
+                  ⚡ Tu saldo se reserva inmediatamente al presionar una opción.
+                </p>
+              </div>
+            )}
+
+            {/* PASO 2: EL REGISTRO EN EL MOMENTO JUSTO (CUANDO YA SE INTERESÓ) */}
+            {step === 2 && (
+              <div className="animate-fade-in">
+                <div className="w-12 h-12 rounded-2xl bg-teal-500/20 text-teal-400 border border-teal-500/40 flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+
+                <h3 className="text-xl font-black text-white text-center mb-1">
+                  ¡Excelente! Tu primera respuesta fue guardada
+                </h3>
+                <p className="text-xs text-center text-slate-300 mb-5 leading-relaxed">
+                  Tus <span className="font-extrabold text-teal-400 text-sm">+${activeMission.reward.toFixed(2)} USD</span> están
+                  reservados. ¿A qué correo te acreditamos tus fondos?
+                </p>
+
+                {error && (
+                  <div className="p-3 mb-4 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold text-center">
+                    {error}
+                  </div>
+                )}
+
+                <form onSubmit={handleClaimMoney} className="space-y-3.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Tu Nombre Completo</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Ej: Daniel Morales"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-teal-400 placeholder-slate-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Correo Electrónico (para tu Billetera)
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-teal-400 placeholder-slate-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Crea tu Contraseña</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-teal-400 placeholder-slate-500"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={claimLoading}
+                    className="w-full mt-2 bg-gradient-to-r from-teal-500 to-emerald-400 text-slate-950 font-black text-xs hover:opacity-90 shadow-lg shadow-teal-500/20 py-2.5"
+                  >
+                    {claimLoading ? (
+                      'Acreditando tus fondos...'
+                    ) : (
+                      `Reclamar mis $${activeMission.reward.toFixed(2)} USD y Ver Billetera 🚀`
+                    )}
+                  </Button>
+                </form>
+
+                <p className="text-[10px] text-center text-slate-400 mt-4">
+                  🔒 Retiro disponible hacia Banco Pichincha, Guayaquil, Produbanco o DeUna.
+                </p>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. BUSINESS INTELLIGENCE STUDIO: DEMO EN VIVO PARA EMPRESAS Y COLEGIOS    */}
+      {/* ========================================================================= */}
+      <section id="demo" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10 border-t border-slate-800/80">
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/20 mb-3">
             <BarChart3 className="w-3.5 h-3.5" />
             <span>Survey 593 Business Intelligence Studio</span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            Analítica que Transforma la Incertidumbre en Rentabilidad
+            Analítica que Transforma Respuestas en Rentabilidad
           </h2>
           <p className="text-slate-400 text-xs sm:text-sm mt-2">
-            Selecciona un sector económico y descubre cómo las organizaciones líderes monitorean el pulso del consumidor ecuatoriano.
+            Selecciona un sector económico y descubre cómo las organizaciones líderes monitorean el pulso del mercado ecuatoriano.
           </p>
         </div>
 
@@ -353,7 +796,6 @@ export const LandingPage = () => {
         {/* Interactive Dashboard Card Display */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden backdrop-blur-xl relative">
           
-          {/* Header of Active Study */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-800">
             <div>
               <div className="flex items-center gap-2.5 mb-1.5">
@@ -373,14 +815,13 @@ export const LandingPage = () => {
                 <span className="text-xs font-bold text-teal-400">{activeStudy.sampleSize}</span>
               </div>
               <Link to="/login">
-                <Button size="sm" variant="primary" className="text-xs font-bold">
+                <Button size="sm" variant="primary" className="text-xs font-bold shadow-lg shadow-teal-500/20">
                   Lanzar Estudio Similar 🚀
                 </Button>
               </Link>
             </div>
           </div>
 
-          {/* Grid of Visual Analytics */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-6 items-start">
             
             {/* Primary Distribution Bars (7 Cols) */}
@@ -396,7 +837,6 @@ export const LandingPage = () => {
                 </span>
               </div>
 
-              {/* Animated Progress Bars */}
               <div className="space-y-3 bg-slate-950/70 p-5 rounded-2xl border border-slate-800">
                 {activeStudy.insights.map((item, idx) => (
                   <div key={idx} className="space-y-1.5">
@@ -414,7 +854,6 @@ export const LandingPage = () => {
                 ))}
               </div>
 
-              {/* Key Strategic Insight Box */}
               <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/25 text-teal-200 text-xs flex items-start gap-3">
                 <Sparkles className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
                 <div>
@@ -469,7 +908,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4. SIMULADOR DE ESTUDIO INTERACTIVO (CALCULADORA DE MUESTRA)              */}
+      {/* 5. SIMULADOR DE ESTUDIO INTERACTIVO (CALCULADORA DE MUESTRA)              */}
       {/* ========================================================================= */}
       <section id="simulador" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10">
         <div className="bg-gradient-to-br from-slate-900 via-[#0C1425] to-slate-950 border border-slate-800 rounded-3xl p-8 lg:p-12 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -502,10 +941,7 @@ export const LandingPage = () => {
             </div>
           </div>
 
-          {/* Interactive Calculator Controls (6 Cols) */}
           <div className="lg:col-span-6 bg-slate-950/80 border border-slate-800 p-6 sm:p-8 rounded-2xl space-y-6">
-            
-            {/* 1. Tipo de Estudio */}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-2">
                 1. Objetivo de la Investigación
@@ -532,7 +968,6 @@ export const LandingPage = () => {
               </div>
             </div>
 
-            {/* 2. Región Territorial */}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-2">
                 2. Cobertura Geográfica
@@ -550,7 +985,6 @@ export const LandingPage = () => {
               </select>
             </div>
 
-            {/* 3. Slider de Tamaño Muestral */}
             <div>
               <div className="flex justify-between items-center mb-2 text-xs">
                 <label className="font-bold text-slate-300">3. Tamaño Muestral Deseado</label>
@@ -573,7 +1007,6 @@ export const LandingPage = () => {
               </div>
             </div>
 
-            {/* Dynamic Result Summary Card */}
             <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 grid grid-cols-2 gap-3 text-center">
               <div>
                 <span className="text-[10px] text-slate-400 font-semibold uppercase">Margen de Error (95% IC)</span>
@@ -585,7 +1018,6 @@ export const LandingPage = () => {
               </div>
             </div>
 
-            {/* Action CTA */}
             <Link to="/login" className="block">
               <Button variant="primary" className="w-full py-3 font-bold text-xs shadow-lg shadow-teal-500/20">
                 Iniciar Campaña con esta Muestra 🚀
@@ -597,7 +1029,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 5. SOLUCIONES POR INDUSTRIA & LÓGICA DE MERCADO                           */}
+      {/* 6. SOLUCIONES POR INDUSTRIA & LÓGICA DE MERCADO                           */}
       {/* ========================================================================= */}
       <section id="soluciones" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-12">
@@ -609,17 +1041,16 @@ export const LandingPage = () => {
             Diseñado para los Desafíos Estratégicos de Ecuador
           </h2>
           <p className="text-slate-400 text-xs sm:text-sm mt-2">
-            Survey 593 no es un generador de encuestas genérico. Es una infraestructura integral adaptada a la dinámica comercial, educativa y regulatoria de nuestro país.
+            Survey 593 no es un formulario genérico. Es una infraestructura integral adaptada a la dinámica comercial, educativa y regulatoria de nuestro país.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           
-          {/* Card 1: Empresas & Retail */}
           <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-teal-500/40 transition-all group flex flex-col justify-between">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-teal-500/15 text-teal-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <ShoppingBagIcon className="w-6 h-6" />
+                <Briefcase className="w-6 h-6" />
               </div>
               <h3 className="text-base font-bold text-white mb-2 group-hover:text-teal-300 transition-colors">
                 Empresas & Consumo Masivo
@@ -640,7 +1071,6 @@ export const LandingPage = () => {
             </ul>
           </div>
 
-          {/* Card 2: Sector Educativo Multi-Tenant */}
           <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 transition-all group flex flex-col justify-between">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -665,7 +1095,6 @@ export const LandingPage = () => {
             </ul>
           </div>
 
-          {/* Card 3: Banca & Servicios Financieros */}
           <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-emerald-500/40 transition-all group flex flex-col justify-between">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -690,7 +1119,6 @@ export const LandingPage = () => {
             </ul>
           </div>
 
-          {/* Card 4: Consultoras & Agencias */}
           <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-teal-500/40 transition-all group flex flex-col justify-between">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-teal-500/15 text-teal-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -719,81 +1147,9 @@ export const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 6. EL ECOSISTEMA: EL VÍNCULO EMPRESA ⇄ CIUDADANÍA (EL ENGANCHE)          */}
+      {/* 7. SEGURIDAD & CUMPLIMIENTO                                               */}
       {/* ========================================================================= */}
-      <section id="ecosistema" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10">
-        <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 lg:p-12 backdrop-blur-xl">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <span className="text-xs font-bold text-teal-400 uppercase tracking-widest block mb-2">
-              El Modelo Bidireccional Survey 593
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              ¿Por Qué Nuestro Modelo Genera Datos Más Precisos?
-            </h2>
-            <p className="text-slate-400 text-xs sm:text-sm mt-3 leading-relaxed">
-              Las encuestas tradicionales sufren de bajas tasas de respuesta o respuestas fraudulentas. Nuestro ecosistema alinea los incentivos de empresas y ciudadanos con total transparencia.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            
-            {/* Paso 1 */}
-            <div className="relative p-6 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-500/15 text-teal-400 font-black text-base flex items-center justify-center">
-                1
-              </div>
-              <h3 className="text-base font-bold text-white">La Organización Diseña y Segmenta</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Utiliza nuestras plantillas probadas o crea preguntas específicas. Define tu público por ciudad, edad y sector en el panel corporativo.
-              </p>
-            </div>
-
-            {/* Paso 2 */}
-            <div className="relative p-6 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 font-black text-base flex items-center justify-center">
-                2
-              </div>
-              <h3 className="text-base font-bold text-white">Ciudadanos Reales Responden</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Miles de encuestados reciben la invitación en sus celulares. Al responder con honestidad, acumulan micro-recompensas directas a sus cuentas bancarias ecuatorianas.
-              </p>
-            </div>
-
-            {/* Paso 3 */}
-            <div className="relative p-6 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-400 font-black text-base flex items-center justify-center">
-                3
-              </div>
-              <h3 className="text-base font-bold text-white">Datos en Tiempo Real y Cero Bots</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Nuestros algoritmos validan respuestas duplicadas y tiempos de lectura. Los resultados se procesan al instante en gráficos exportables.
-              </p>
-            </div>
-
-          </div>
-
-          {/* Respondent Trust Callout */}
-          <div className="mt-10 p-6 rounded-2xl bg-gradient-to-r from-teal-500/10 via-slate-900 to-indigo-500/10 border border-teal-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-1 text-center md:text-left">
-              <h4 className="text-sm font-bold text-white">¿Eres ciudadano y quieres participar en la Comunidad 593?</h4>
-              <p className="text-xs text-slate-400">
-                Tu opinión ayuda a mejorar los productos y servicios del país. Retira tus fondos acumulados a Banco Pichincha, Guayaquil, Produbanco o DeUna.
-              </p>
-            </div>
-            <Link to="/login" className="shrink-0">
-              <Button size="sm" variant="outline" className="text-xs font-bold">
-                Unirme como Encuestado 👤
-              </Button>
-            </Link>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 7. SEGURIDAD & COMPROMISO INSTITUCIONAL                                    */}
-      {/* ========================================================================= */}
-      <section id="seguridad" className="py-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10">
+      <section className="py-16 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-10">
           <ShieldCheck className="w-10 h-10 text-teal-400 mx-auto mb-3" />
           <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -842,7 +1198,7 @@ export const LandingPage = () => {
             Comienza a Tomar Decisiones Basadas en Datos Reales Hoy Mismo
           </h2>
           <p className="text-slate-300 text-xs sm:text-sm max-w-2xl mx-auto mb-8 relative z-10">
-            Crea tu cuenta empresarial en 1 minuto. Publica tu primer estudio o solicita una demostración guiada para tu organización.
+            Crea tu cuenta empresarial en 1 minuto. Publica tu primer estudio geolocalizado o solicita una demostración guiada para tu organización.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">

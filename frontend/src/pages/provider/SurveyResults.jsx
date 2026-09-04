@@ -63,14 +63,29 @@ export const SurveyResults = () => {
   }
 
   const exportCSV = () => {
-    const headers = ['ID_Respuesta', 'Fecha', ...surveyQuestions.map((q) => `"${q.text}"`)];
+    // Sanitizador estricto RFC 4180: maneja comas, comillas dobles y saltos de línea
+    const sanitizeField = (value) => {
+      if (value === null || value === undefined) return '""';
+      const str = String(value);
+      // Duplicar comillas internas para no romper el estándar CSV
+      const escaped = str.replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+
+    const headers = [
+      sanitizeField('ID_Respuesta'),
+      sanitizeField('Fecha_Completada'),
+      ...surveyQuestions.map((q) => sanitizeField(q.text)),
+    ];
+
     const rows = surveyResponses.map((r) => [
-      r.id,
-      new Date(r.completedAt).toLocaleDateString('es-EC'),
-      ...surveyQuestions.map((q) => `"${r.answers?.[q.id] || ''}"`),
+      sanitizeField(r.id),
+      sanitizeField(new Date(r.completedAt).toLocaleDateString('es-EC')),
+      ...surveyQuestions.map((q) => sanitizeField(r.answers?.[q.id] || '')),
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    // Añadir \uFEFF (UTF-8 BOM) para compatibilidad nativa con tildes y eñes en Microsoft Excel
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

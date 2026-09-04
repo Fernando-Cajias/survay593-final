@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { DatabaseProvider } from './context/DatabaseContext';
 import { OrganizationProvider } from './context/OrganizationContext';
@@ -36,10 +38,12 @@ import { AdminEcosystem } from './pages/admin/AdminEcosystem';
 
 export const App = () => {
   return (
-    <AuthProvider>
-      <DatabaseProvider>
-        <OrganizationProvider>
-          <BrowserRouter>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <DatabaseProvider>
+            <OrganizationProvider>
+              <BrowserRouter>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
@@ -86,5 +90,7 @@ export const App = () => {
         </OrganizationProvider>
       </DatabaseProvider>
     </AuthProvider>
+  </LanguageProvider>
+</ThemeProvider>
   );
 };

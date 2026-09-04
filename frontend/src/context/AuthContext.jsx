@@ -670,6 +670,81 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Autenticación Social Unificada (Sincroniza con Supabase profiles en tiempo real)
+  const loginWithSocialAccount = async ({ provider, email, name, avatarUrl, role = 'doer', company = '' }) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      return { success: false, message: 'Se requiere un correo electrónico válido para autenticar.' };
+    }
+
+    // 1. Buscar si ya existe en Supabase o en cache local
+    let user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    if (!user && isSupabaseConfigured) {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+        if (profile) user = profile;
+      } catch (err) {
+        console.warn('Error buscando perfil en Supabase:', err);
+      }
+    }
+
+    if (!user) {
+      // Crear nuevo usuario en Supabase con su perfil verificado
+      const newId = `oauth_${provider}_${Date.now()}`;
+      user = {
+        id: newId,
+        name: name || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        password: '',
+        role: role,
+        company: company || (role === 'provider' ? 'Orión Technologies' : ''),
+        industry: 'Tecnología',
+        city: 'Quito',
+        gender: 'O',
+        age: 25,
+        verified: true,
+        balance: role === 'provider' ? 1000 : 5.0,
+        surveysCompleted: 0,
+        streak: 1,
+        avatarColor: provider === 'google' ? '#4285F4' : provider === 'microsoft' ? '#05A6F0' : provider === 'github' ? '#24292F' : '#0081FB',
+        avatarUrl: avatarUrl || null,
+        provider: provider,
+        createdAt: new Date().toISOString(),
+      };
+
+      if (isSupabaseConfigured) {
+        try {
+          await supabase.from('profiles').upsert([
+            {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              company: user.company,
+              industry: user.industry,
+              city: user.city,
+              verified: true,
+              balance: user.balance,
+            },
+          ]);
+        } catch (err) {
+          console.warn('Error insertando perfil en Supabase:', err);
+        }
+      }
+
+      setUsers((prev) => [...prev.filter((u) => u.email !== cleanEmail), user]);
+    }
+
+    resetFailedAttempts(cleanEmail);
+    setCurrentUser(user);
+    return { success: true, user };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -684,6 +759,7 @@ export const AuthProvider = ({ children }) => {
         findAccountByIdentity,
         resetPassword,
         signInWithOAuth,
+        loginWithSocialAccount,
         sendRealPasswordResetEmail,
         updateRealPassword,
         isPasswordRecoveryActive,

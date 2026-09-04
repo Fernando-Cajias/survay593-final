@@ -41,6 +41,111 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [isPasswordRecoveryActive, setIsPasswordRecoveryActive] = useState(false);
+
+  // Escuchar eventos de Supabase Auth (OAuth login, password recovery, refresh)
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    // Verificar si la URL actual viene de un callback de recuperación de contraseña
+    if (window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery')) {
+      setIsPasswordRecoveryActive(true);
+    }
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Evento de Autenticación Supabase:', event, session?.user?.email);
+
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecoveryActive(true);
+      }
+
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
+        const supaUser = session.user;
+        const supaEmail = (supaUser.email || '').toLowerCase();
+        const pendingRole = sessionStorage.getItem('survey593_oauth_role') || 'doer';
+        const pendingCompany = sessionStorage.getItem('survey593_oauth_company') || '';
+
+        // Buscar perfil existente en la tabla profiles
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', supaEmail)
+            .maybeSingle();
+
+          let appUser;
+          if (profile) {
+            appUser = {
+              id: profile.id,
+              name: profile.name || supaUser.user_metadata?.full_name || supaUser.user_metadata?.name || 'Usuario',
+              email: profile.email,
+              role: profile.role || pendingRole,
+              company: profile.company || pendingCompany,
+              industry: profile.industry || 'Tecnología',
+              city: profile.city || 'Quito',
+              verified: true,
+              balance: parseFloat(profile.balance) || 0,
+              surveysCompleted: profile.surveys_completed || 0,
+              streak: profile.streak || 0,
+              avatarColor: profile.avatar_color || '#0D9488',
+              avatarUrl: supaUser.user_metadata?.avatar_url || null,
+              createdAt: profile.created_at,
+            };
+          } else {
+            // Crear perfil en profiles si es primer login con Google / Microsoft / GitHub / Meta
+            const fullName =
+              supaUser.user_metadata?.full_name ||
+              supaUser.user_metadata?.name ||
+              supaEmail.split('@')[0];
+
+            appUser = {
+              id: supaUser.id,
+              name: fullName,
+              email: supaEmail,
+              role: pendingRole,
+              company: pendingCompany,
+              industry: 'Tecnología',
+              city: 'Quito',
+              gender: 'O',
+              age: 25,
+              verified: true,
+              balance: pendingRole === 'provider' ? 1000 : 5.0,
+              surveysCompleted: 0,
+              streak: 1,
+              avatarColor: '#0D9488',
+              avatarUrl: supaUser.user_metadata?.avatar_url || null,
+              createdAt: new Date().toISOString(),
+            };
+
+            await supabase.from('profiles').insert([
+              {
+                id: appUser.id,
+                name: appUser.name,
+                email: appUser.email,
+                role: appUser.role,
+                company: appUser.company,
+                industry: appUser.industry,
+                city: appUser.city,
+                verified: appUser.verified,
+                balance: appUser.balance,
+              },
+            ]);
+          }
+
+          setCurrentUser(appUser);
+          setUsers((prev) => [...prev.filter((u) => u.email !== supaEmail), appUser]);
+          resetFailedAttempts(supaEmail);
+        } catch (err) {
+          console.warn('Error sincronizando perfil OAuth:', err);
+        }
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
   // Load live users from Supabase on mount
   useEffect(() => {
     async function loadSupabaseUsers() {
@@ -463,6 +568,108 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Iniciar Sesión con Proveedores Oficiales OAuth (Google, Microsoft, GitHub, Meta)
+  const signInWithOAuth = async (provider, role = 'doer', company = '') => {
+    if (!isSupabaseConfigured) {
+      return { success: false, message: 'Supabase no está configurado.' };
+    }
+
+    try {
+      sessionStorage.setItem('survey593_oauth_role', role);
+      if (company) sessionStorage.setItem('survey593_oauth_company', company);
+
+      // En Supabase, Microsoft se llama 'azure'
+      const targetProvider = provider === 'microsoft' ? 'azure' : provider;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: targetProvider,
+        options: {
+          redirectTo: `${window.location.origin}/login`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, message: err.message || 'Error iniciando sesión con proveedor social.' };
+    }
+  };
+
+  // Enviar correo real de recuperación mediante Supabase Auth
+  const sendRealPasswordResetEmail = async (emailToReset) => {
+    const cleanEmail = (emailToReset || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      return { success: false, message: 'Por favor ingresa un correo electrónico válido.' };
+    }
+
+    if (!isSupabaseConfigured) {
+      return { success: false, message: 'El servicio de correo Supabase no está configurado.' };
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: `${window.location.origin}/login?type=recovery`,
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      return {
+        success: true,
+        message: `¡Correo enviado! Revisa tu bandeja de entrada o spam en ${cleanEmail}. Hemos enviado el enlace oficial para que restablezcas tu contraseña de forma segura.`,
+      };
+    } catch (err) {
+      return { success: false, message: err.message || 'No se pudo enviar el correo de recuperación.' };
+    }
+  };
+
+  // Actualizar contraseña real a través de Supabase Auth
+  const updateRealPassword = async (newPass) => {
+    if (!newPass || newPass.length < 6) {
+      return { success: false, message: 'La contraseña debe tener al menos 6 caracteres.' };
+    }
+
+    if (!isSupabaseConfigured) {
+      return { success: false, message: 'Supabase no está disponible.' };
+    }
+
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPass,
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      if (data?.user?.email) {
+        const uEmail = data.user.email.toLowerCase();
+        await supabase
+          .from('profiles')
+          .update({ password: newPass })
+          .eq('email', uEmail);
+
+        resetFailedAttempts(uEmail);
+      }
+
+      setIsPasswordRecoveryActive(false);
+      return {
+        success: true,
+        message: 'Tu contraseña ha sido actualizada y asegurada en el servidor central. Ya puedes iniciar sesión.',
+      };
+    } catch (err) {
+      return { success: false, message: err.message || 'Error actualizando contraseña en Supabase.' };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -476,6 +683,11 @@ export const AuthProvider = ({ children }) => {
         unlockAccount,
         findAccountByIdentity,
         resetPassword,
+        signInWithOAuth,
+        sendRealPasswordResetEmail,
+        updateRealPassword,
+        isPasswordRecoveryActive,
+        setIsPasswordRecoveryActive,
         isAuthenticated: Boolean(currentUser),
       }}
     >

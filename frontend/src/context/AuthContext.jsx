@@ -379,7 +379,7 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
-  // Secure login validating email & password with anti-brute force protection
+  // Secure login validating email & password with anti-brute force protection & Real Supabase Auth
   const login = async (email, password) => {
     const cleanEmail = email.trim().toLowerCase();
 
@@ -395,45 +395,125 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    // First check local state
-    let user = users.find((u) => u.email.toLowerCase() === cleanEmail && u.password === password);
+    let user = null;
 
-    // If not found in local cache, query Supabase in real time
+    // 2. Intentar autenticación REAL con Supabase Auth (auth.users)
+    if (isSupabaseConfigured) {
+      try {
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: password,
+        });
+
+        if (authData?.user && !authError) {
+          // Usuario autenticado con éxito en Supabase Auth
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authData.user.id)
+            .maybeSingle();
+
+          if (profile) {
+            user = {
+              id: profile.id,
+              name: profile.name || authData.user.user_metadata?.name || 'Usuario',
+              email: profile.email,
+              password: password,
+              role: profile.role || 'doer',
+              company: profile.company || '',
+              industry: profile.industry || 'Tecnología',
+              cedula: profile.cedula || null,
+              ruc: profile.ruc || null,
+              age: profile.age || 25,
+              city: profile.city || 'Quito',
+              gender: profile.gender || 'O',
+              verified: profile.verified ?? true,
+              balance: parseFloat(profile.balance) || 0,
+              surveysCompleted: profile.surveys_completed || 0,
+              streak: profile.streak || 0,
+              avatarColor: profile.avatar_color || '#0D9488',
+              createdAt: profile.created_at || authData.user.created_at,
+            };
+          } else {
+            const meta = authData.user.user_metadata || {};
+            user = {
+              id: authData.user.id,
+              name: meta.name || cleanEmail.split('@')[0],
+              email: cleanEmail,
+              password: password,
+              role: meta.role || 'doer',
+              company: meta.company || '',
+              industry: 'Tecnología',
+              city: 'Quito',
+              gender: 'O',
+              age: 25,
+              verified: true,
+              balance: meta.role === 'provider' ? 500.0 : 0.0,
+              surveysCompleted: 0,
+              streak: 0,
+              avatarColor: '#0D9488',
+              createdAt: authData.user.created_at,
+            };
+            await supabase.from('profiles').upsert([
+              {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                company: user.company,
+                industry: user.industry,
+                city: user.city,
+                verified: true,
+                balance: user.balance,
+              },
+            ]);
+          }
+        }
+      } catch (err) {
+        console.warn('Error en supabase.auth.signInWithPassword:', err);
+      }
+    }
+
+    // 3. Si no inició por Supabase Auth, revisar en tabla profiles / cache local
     if (!user && isSupabaseConfigured) {
       try {
-        const { data, error } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('email', cleanEmail)
           .eq('password', password)
-          .single();
+          .maybeSingle();
 
-        if (data && !error) {
+        if (profile) {
           user = {
-            id: data.id,
-            name: data.name,
-            email: data.email,
-            password: data.password,
-            role: data.role,
-            company: data.company,
-            industry: data.industry,
-            cedula: data.cedula || null,
-            ruc: data.ruc || null,
-            age: data.age,
-            city: data.city,
-            gender: data.gender,
-            verified: data.verified,
-            balance: parseFloat(data.balance) || 0,
-            surveysCompleted: data.surveys_completed || 0,
-            streak: data.streak || 0,
-            avatarColor: data.avatar_color || '#0D9488',
-            createdAt: data.created_at,
+            id: profile.id,
+            name: profile.name,
+            email: profile.email,
+            password: profile.password,
+            role: profile.role,
+            company: profile.company,
+            industry: profile.industry,
+            cedula: profile.cedula || null,
+            ruc: profile.ruc || null,
+            age: profile.age,
+            city: profile.city,
+            gender: profile.gender,
+            verified: profile.verified,
+            balance: parseFloat(profile.balance) || 0,
+            surveysCompleted: profile.surveys_completed || 0,
+            streak: profile.streak || 0,
+            avatarColor: profile.avatar_color || '#0D9488',
+            createdAt: profile.created_at,
           };
-          setUsers((prev) => [...prev.filter((u) => u.id !== user.id), user]);
         }
       } catch (err) {
-        console.warn('Error verifying login on Supabase:', err);
+        console.warn('Error buscando en profiles:', err);
       }
+    }
+
+    // 4. Fallback a usuarios en memoria
+    if (!user) {
+      user = users.find((u) => u.email.toLowerCase() === cleanEmail && u.password === password);
     }
 
     if (user) {
@@ -459,35 +539,51 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
-  // Secure registration creating real profile in Supabase
+  // Secure registration creating real auth record in Supabase Auth & profiles
   const register = async (userData) => {
     const cleanEmail = userData.email.trim().toLowerCase();
 
-    // Check email uniqueness locally
-    const existsLocally = users.some((u) => u.email.toLowerCase() === cleanEmail);
-    if (existsLocally) {
-      return { success: false, message: 'Este correo electrónico ya está registrado en la plataforma.' };
-    }
-
-    // Check uniqueness in Supabase
+    // 1. Registro REAL en Supabase Auth
+    let authUser = null;
     if (isSupabaseConfigured) {
       try {
-        const { data: existing } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', cleanEmail)
-          .maybeSingle();
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: userData.password,
+          options: {
+            data: {
+              name: userData.name.trim(),
+              role: userData.role || 'doer',
+              company: userData.company ? userData.company.trim() : null,
+            },
+          },
+        });
 
-        if (existing) {
-          return { success: false, message: 'Este correo electrónico ya está registrado en la plataforma.' };
+        if (authError) {
+          if (authError.message?.toLowerCase().includes('already') || authError.status === 422) {
+            return { success: false, message: 'Este correo electrónico ya está registrado en la plataforma.' };
+          }
+          console.warn('Advertencia en Supabase Auth signUp:', authError.message);
+        }
+
+        if (authData?.user) {
+          authUser = authData.user;
         }
       } catch (err) {
-        console.warn('Error checking existing email:', err);
+        console.warn('Error en supabase.auth.signUp:', err);
       }
     }
 
+    // Check email uniqueness locally
+    const existsLocally = users.some((u) => u.email.toLowerCase() === cleanEmail);
+    if (existsLocally && !authUser) {
+      return { success: false, message: 'Este correo electrónico ya está registrado en la plataforma.' };
+    }
+
+    const userId = authUser ? authUser.id : `user_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`;
+
     const newUser = {
-      id: `user_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
+      id: userId,
       name: userData.name.trim(),
       email: cleanEmail,
       password: userData.password,
@@ -496,21 +592,23 @@ export const AuthProvider = ({ children }) => {
       industry: userData.industry ? userData.industry.trim() : null,
       city: userData.city || 'Quito',
       gender: userData.gender || 'F',
+      cedula: userData.cedula || null,
+      ruc: userData.ruc || null,
       balance: userData.role === 'provider' ? 500.0 : (userData.initialBalance ? parseFloat(userData.initialBalance) : 0.0),
-      verified: false,
+      verified: true,
       surveysCompleted: 0,
       streak: 0,
       avatarColor: userData.role === 'provider' ? '#0D9488' : '#6366F1',
       createdAt: new Date().toISOString(),
     };
 
-    setUsers((prev) => [...prev, newUser]);
+    setUsers((prev) => [...prev.filter((u) => u.email !== cleanEmail), newUser]);
     setCurrentUser(newUser);
 
-    // Save directly to Supabase PostgreSQL
+    // Guardar en la tabla profiles de Supabase
     if (isSupabaseConfigured) {
       try {
-        await supabase.from('profiles').insert([
+        await supabase.from('profiles').upsert([
           {
             id: newUser.id,
             name: newUser.name,
@@ -521,8 +619,9 @@ export const AuthProvider = ({ children }) => {
             industry: newUser.industry,
             city: newUser.city,
             gender: newUser.gender,
-            age: newUser.age,
-            verified: false,
+            cedula: newUser.cedula,
+            ruc: newUser.ruc,
+            verified: true,
             balance: newUser.balance,
             surveys_completed: 0,
             streak: 0,
@@ -530,7 +629,7 @@ export const AuthProvider = ({ children }) => {
           },
         ]);
       } catch (err) {
-        console.error('Error saving user to Supabase:', err);
+        console.error('Error saving user profile to Supabase:', err);
       }
     }
 
@@ -585,6 +684,7 @@ export const AuthProvider = ({ children }) => {
         provider: targetProvider,
         options: {
           redirectTo: `${window.location.origin}/login`,
+          skipBrowserRedirect: true,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -594,6 +694,30 @@ export const AuthProvider = ({ children }) => {
 
       if (error) {
         return { success: false, message: error.message };
+      }
+
+      if (data?.url) {
+        // Validar si el proveedor está habilitado sin enviar al usuario a la pantalla negra de error 400
+        try {
+          const checkRes = await fetch(data.url);
+          if (checkRes.status === 400) {
+            const body = await checkRes.json().catch(() => ({}));
+            if (body?.msg?.includes('provider is not enabled') || body?.error_code === 'validation_failed') {
+              return {
+                success: false,
+                isNotEnabled: true,
+                provider,
+                message: `El proveedor ${provider.toUpperCase()} aún no está activado en tu panel de Supabase.`,
+              };
+            }
+          }
+        } catch (fetchErr) {
+          // Si hubo error de red o redirect opaco de CORS por parte de Google/Microsoft, es seguro continuar
+        }
+
+        // Si el proveedor está habilitado en Supabase, redirigir oficialmente
+        window.location.href = data.url;
+        return { success: true, data };
       }
 
       return { success: true, data };

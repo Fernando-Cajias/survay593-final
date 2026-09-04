@@ -51,11 +51,8 @@ export const LoginPage = () => {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // OAuth Modal State
-  const [selectedOauthProvider, setSelectedOauthProvider] = useState(null); // 'google' | 'microsoft' | 'github' | 'facebook'
-  const [isCustomAccount, setIsCustomAccount] = useState(false);
-  const [customOauthEmail, setCustomOauthEmail] = useState('');
-  const [customOauthName, setCustomOauthName] = useState('');
+  // OAuth Provider Setup Notification Modal
+  const [oauthNotice, setOauthNotice] = useState(null); // { provider, title, message }
 
   // Security Lockout State
   const [lockStatus, setLockStatus] = useState({ isLocked: false, remainingSeconds: 0, attempts: 0 });
@@ -89,7 +86,6 @@ export const LoginPage = () => {
     findAccountByIdentity,
     resetPassword,
     signInWithOAuth,
-    loginWithSocialAccount,
     sendRealPasswordResetEmail,
     updateRealPassword,
     isPasswordRecoveryActive,
@@ -143,49 +139,30 @@ export const LoginPage = () => {
   }, [lockStatus.isLocked, lockStatus.remainingSeconds]);
 
   // ==========================================
-  // APERTURA DE SELECTOR DE IDENTIDAD CORPORATIVA OAUTH
+  // AUTENTICACIÓN OFICIAL CON PROVEEDORES OAUTH
   // ==========================================
-  const handleOAuthClick = (provider) => {
+  const handleOAuthClick = async (provider) => {
     setError('');
-    setSelectedOauthProvider(provider);
-    setIsCustomAccount(false);
-    setCustomOauthEmail('');
-    setCustomOauthName('');
-  };
+    setOauthNotice(null);
+    setOauthLoading(provider);
 
-  // Confirmar inicio de sesión con la cuenta seleccionada
-  const handleConfirmSocialLogin = async (accEmail, accName, accAvatar) => {
-    setError('');
-    setOauthLoading(selectedOauthProvider);
-    const res = await loginWithSocialAccount({
-      provider: selectedOauthProvider,
-      email: accEmail,
-      name: accName,
-      avatarUrl: accAvatar,
-      role: role,
-      company: company || (role === 'provider' ? 'Orión Technologies' : ''),
-    });
+    const res = await signInWithOAuth(provider, role, company);
     setOauthLoading(null);
-    setSelectedOauthProvider(null);
 
-    if (res.success) {
-      const target =
-        res.user.role === 'provider' ? '/provider' : res.user.role === 'admin' ? '/admin' : '/doer';
-      navigate(target);
-    } else {
+    if (res.isNotEnabled) {
+      const titles = {
+        google: 'Google Workspace / Gmail',
+        microsoft: 'Microsoft 365 / Azure AD',
+        github: 'GitHub Enterprise',
+        facebook: 'Meta / Facebook ID',
+      };
+      setOauthNotice({
+        provider,
+        title: titles[provider] || provider.toUpperCase(),
+        message: res.message,
+      });
+    } else if (!res.success && res.message) {
       setError(res.message);
-    }
-  };
-
-  // Conexión directa a Supabase si el administrador ya configuró Client ID y Secret
-  const handleTestDirectSupabaseOAuth = async () => {
-    setOauthLoading(selectedOauthProvider);
-    const res = await signInWithOAuth(selectedOauthProvider, role, company);
-    if (!res.success) {
-      setOauthLoading(null);
-      setError(
-        `Aviso de configuración Supabase: Para usar el redireccionamiento directo debes habilitar ${selectedOauthProvider} en tu panel de Supabase. Puedes usar el selector seguro arriba para ingresar ya mismo.`
-      );
     }
   };
 
@@ -428,118 +405,7 @@ export const LoginPage = () => {
     setRecoverySuccess('');
   };
 
-  // Datos para el selector de cuentas corporativas oficiales
-  const OAUTH_PROFILES = {
-    google: {
-      name: 'Google Workspace / Gmail',
-      title: 'Acceder con Google',
-      subtitle: 'Elige una cuenta de Google para continuar en Survey 593',
-      badge: 'Google Identity Services (OAuth 2.0)',
-      icon: (
-        <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-        </svg>
-      ),
-      accounts: [
-        {
-          name: 'David DevOps (Personal)',
-          email: 'david.devops.ec@gmail.com',
-          detail: 'Cuenta Google verificada',
-          avatarLetter: 'D',
-          avatarBg: 'bg-emerald-600',
-        },
-        {
-          name: 'Orión Technologies',
-          email: 'orion.technologies.ec@gmail.com',
-          detail: 'Cuenta corporativa Google Workspace',
-          avatarLetter: 'O',
-          avatarBg: 'bg-teal-600',
-        },
-      ],
-    },
-    microsoft: {
-      name: 'Microsoft 365 / Azure AD',
-      title: 'Iniciar Sesión con Microsoft',
-      subtitle: 'Selecciona tu cuenta corporativa o institucional de Microsoft',
-      badge: 'Microsoft Entra ID (Azure Active Directory)',
-      icon: (
-        <svg className="w-6 h-6 shrink-0" viewBox="0 0 23 23">
-          <path fill="#f35325" d="M1 1h10v10H1z"/>
-          <path fill="#81bc06" d="M12 1h10v10H12z"/>
-          <path fill="#05a6f0" d="M1 12h10v10H1z"/>
-          <path fill="#ffba08" d="M12 12h10v10H12z"/>
-        </svg>
-      ),
-      accounts: [
-        {
-          name: 'Orión Tech Corporativo',
-          email: 'carlos.perez@orion.ec',
-          detail: 'Azure AD · Director de Tecnología',
-          avatarLetter: 'C',
-          avatarBg: 'bg-blue-600',
-        },
-        {
-          name: 'Rectorado Institucional',
-          email: 'rectorado@colegio.edu.ec',
-          detail: 'Microsoft 365 Educación',
-          avatarLetter: 'R',
-          avatarBg: 'bg-indigo-600',
-        },
-      ],
-    },
-    github: {
-      name: 'GitHub Enterprise',
-      title: 'Continuar con GitHub',
-      subtitle: 'Autenticación con tu usuario u organización de GitHub',
-      badge: 'GitHub Developer SSO',
-      icon: (
-        <svg className="w-6 h-6 shrink-0 fill-current text-white" viewBox="0 0 24 24">
-          <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-        </svg>
-      ),
-      accounts: [
-        {
-          name: 'DavidDevOps',
-          email: 'daviddevops@github.com',
-          detail: 'GitHub Verified Developer',
-          avatarLetter: 'D',
-          avatarBg: 'bg-slate-700',
-        },
-        {
-          name: 'Orion-Technologies-EC',
-          email: 'admin@orion-tech.ec',
-          detail: 'GitHub Organization Admin',
-          avatarLetter: 'O',
-          avatarBg: 'bg-purple-600',
-        },
-      ],
-    },
-    facebook: {
-      name: 'Meta / Facebook',
-      title: 'Continuar con Meta',
-      subtitle: 'Conectar tu perfil oficial de Meta en Survey 593',
-      badge: 'Meta Graph API',
-      icon: (
-        <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="#0081FB">
-          <path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/>
-        </svg>
-      ),
-      accounts: [
-        {
-          name: 'David DevOps (Perfil Meta)',
-          email: 'david.devops@meta.com',
-          detail: 'Perfil verificado en Meta',
-          avatarLetter: 'M',
-          avatarBg: 'bg-blue-700',
-        },
-      ],
-    },
-  };
 
-  const currentOauthInfo = selectedOauthProvider ? OAUTH_PROFILES[selectedOauthProvider] : null;
 
   return (
     <div className="min-h-screen bg-[#070B14] text-slate-100 flex items-center justify-center p-4 lg:p-8 relative overflow-hidden font-sans selection:bg-teal-500 selection:text-white">
@@ -986,6 +852,7 @@ export const LoginPage = () => {
                       <Mail className="w-4 h-4" />
                     </div>
                     <input
+                      id="auth-email-input"
                       type="email"
                       required
                       disabled={lockStatus.isLocked}
@@ -1111,150 +978,101 @@ export const LoginPage = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODAL 1: SELECTOR DE IDENTIDAD CORPORATIVA OAUTH 2.0 (GOOGLE, MS, GIT, META)*/}
+      {/* MODAL: ESTADO DE INTEGRACIÓN OAUTH 2.0 (GOOGLE, MICROSOFT, GITHUB, META)   */}
       {/* ========================================================================= */}
-      {selectedOauthProvider && currentOauthInfo && (
+      {oauthNotice && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
           <div className="w-full max-w-md bg-[#0F172A] text-slate-100 rounded-2xl shadow-2xl overflow-hidden border border-slate-800 my-auto animate-scale-in">
-            {/* Cabecera del Proveedor Branded */}
+            {/* Cabecera */}
             <div className="bg-slate-900 p-5 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shadow-sm">
-                  {currentOauthInfo.icon}
+                <div className="w-10 h-10 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                  <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-white leading-tight">
-                    {currentOauthInfo.title}
+                    Acceso con {oauthNotice.title}
                   </h3>
                   <span className="text-[10px] text-teal-400 font-bold uppercase tracking-wider">
-                    {currentOauthInfo.badge}
+                    Conexión Directa OAuth 2.0
                   </span>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedOauthProvider(null)}
+                onClick={() => setOauthNotice(null)}
                 className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-5 space-y-4 text-xs">
-              <p className="text-slate-300 text-xs leading-relaxed">
-                {currentOauthInfo.subtitle}. La cuenta se sincronizará automáticamente con tu perfil corporativo en el rol <strong className="text-white capitalize font-bold">"{role === 'provider' ? 'Empresa / Institución' : 'Ciudadano / Encuestado'}"</strong>.
-              </p>
-
-              {/* Lista de Cuentas Sugeridas / Verificadas */}
-              {!isCustomAccount ? (
-                <div className="space-y-2">
-                  {currentOauthInfo.accounts.map((acc, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleConfirmSocialLogin(acc.email, acc.name)}
-                      className="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800/90 border border-slate-800 hover:border-teal-500/50 text-left flex items-center justify-between transition-all group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full ${acc.avatarBg} text-white font-black text-sm flex items-center justify-center shrink-0`}>
-                          {acc.avatarLetter}
-                        </div>
-                        <div>
-                          <div className="font-bold text-white text-xs group-hover:text-teal-300 transition-colors">
-                            {acc.name}
-                          </div>
-                          <div className="text-[11px] text-slate-400 font-mono">
-                            {acc.email}
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">
-                            {acc.detail}
-                          </div>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-teal-400 group-hover:translate-x-0.5 transition-all shrink-0" />
-                    </button>
-                  ))}
-
-                  {/* Botón para Ingresar Otra Cuenta Real */}
-                  <button
-                    type="button"
-                    onClick={() => setIsCustomAccount(true)}
-                    className="w-full p-3 rounded-xl bg-slate-950/60 hover:bg-slate-900 border border-dashed border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all mt-2"
-                  >
-                    <Plus className="w-4 h-4 text-teal-400" />
-                    <span>Usar otra cuenta de {currentOauthInfo.name}...</span>
-                  </button>
+            {/* Contenido Informativo Real */}
+            <div className="p-6 space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 leading-relaxed text-xs space-y-2">
+                <p className="font-bold flex items-center gap-1.5 text-amber-300">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  Activación requerida en el panel de Supabase
+                </p>
+                <p className="text-[11px] text-amber-200/90">
+                  Para habilitar la autenticación automática en 1 clic con <strong>{oauthNotice.title}</strong>, se requiere activar el interruptor e ingresar las credenciales del proveedor (Client ID y Client Secret) en la consola de Supabase:
+                </p>
+                <div className="p-2 bg-slate-950/80 rounded-lg text-[10px] font-mono text-slate-300 border border-slate-800">
+                  Supabase Dashboard → Authentication → Providers → {oauthNotice.provider?.toUpperCase()}
                 </div>
-              ) : (
-                /* Formulario para ingresar cualquier cuenta real */
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleConfirmSocialLogin(customOauthEmail, customOauthName || customOauthEmail.split('@')[0]);
-                  }}
-                  className="space-y-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800 animate-fade-in"
-                >
-                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <span>Conectar cuenta de {currentOauthInfo.name}</span>
-                  </div>
+              </div>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      Correo Electrónico Real de {selectedOauthProvider === 'google' ? 'Gmail / Google' : selectedOauthProvider === 'microsoft' ? 'Microsoft / Outlook' : 'GitHub'}
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={customOauthEmail}
-                      onChange={(e) => setCustomOauthEmail(e.target.value)}
-                      placeholder="tu-correo@ejemplo.com"
-                      className="w-full px-3.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-teal-400"
-                    />
+              <div className="space-y-2 text-slate-300 leading-relaxed text-xs">
+                <p className="font-semibold text-white">
+                  ¿Cómo ingresar ahora mismo de forma 100% real?
+                </p>
+                <p className="text-slate-400 text-xs">
+                  Puedes registrarte o iniciar sesión de inmediato con tu correo electrónico real (tu cuenta personal de Gmail, Outlook, institucional o corporativa) y tu contraseña en el formulario central.
+                </p>
+                <div className="space-y-1.5 pt-1 text-[11px] text-slate-400">
+                  <div className="flex items-center gap-2 text-teal-400">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Registro real en Supabase Auth y base de datos</span>
                   </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      Nombre o Razón Social
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={customOauthName}
-                      onChange={(e) => setCustomOauthName(e.target.value)}
-                      placeholder="Ej: Ing. David Pérez"
-                      className="w-full px-3.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-teal-400"
-                    />
+                  <div className="flex items-center gap-2 text-teal-400">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Recuperación de contraseña oficial a tu bandeja de correo</span>
                   </div>
-
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsCustomAccount(false)}
-                      className="flex-1 py-2 rounded-lg bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700 transition-colors"
-                    >
-                      Atrás
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-2 rounded-lg bg-teal-600 text-white font-bold text-xs hover:bg-teal-500 transition-colors shadow-sm"
-                    >
-                      Entrar con esta Cuenta 🚀
-                    </button>
+                  <div className="flex items-center gap-2 text-teal-400">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Protección con bloqueo anti-fuerza bruta tras 5 intentos</span>
                   </div>
-                </form>
-              )}
+                </div>
+              </div>
 
-              {/* Botón Informativo sobre Redirección Directa a Supabase */}
-              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                <span>¿Deseas probar conexión HTTP directa?</span>
+              <div className="pt-2 flex flex-col gap-2">
                 <button
                   type="button"
-                  onClick={handleTestDirectSupabaseOAuth}
-                  className="text-teal-400 hover:underline font-semibold flex items-center gap-1"
-                  title="Prueba la llamada directa a Supabase. Nota: Requiere Client ID configurado en Supabase Dashboard."
+                  onClick={() => {
+                    setOauthNotice(null);
+                    if (!isRegister) setIsRegister(true);
+                    setTimeout(() => {
+                      document.getElementById('auth-email-input')?.focus();
+                    }, 100);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs transition-colors shadow-sm flex items-center justify-center gap-2"
                 >
-                  <span>Probar API Supabase</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <Mail className="w-4 h-4" />
+                  <span>Registrarme con mi correo real</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOauthNotice(null);
+                    if (isRegister) setIsRegister(false);
+                    setTimeout(() => {
+                      document.getElementById('auth-email-input')?.focus();
+                    }, 100);
+                  }}
+                  className="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-colors"
+                >
+                  Ya tengo cuenta registrada, iniciar sesión
                 </button>
               </div>
             </div>

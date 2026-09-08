@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  survey593-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: survey593_enterprise_app
+    ports:
+      - "80:80"
+    restart: always
+    environment:
+      - NODE_ENV=production

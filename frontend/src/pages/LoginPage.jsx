@@ -37,6 +37,7 @@ export const LoginPage = () => {
     updateRealPassword,
     isPasswordRecoveryActive,
     setIsPasswordRecoveryActive,
+    currentUser,
   } = useAuth();
 
   const { theme, toggleTheme, isDark } = useTheme();
@@ -73,6 +74,15 @@ export const LoginPage = () => {
 
   // Security Lockout State
   const [lockStatus, setLockStatus] = useState({ isLocked: false, remainingSeconds: 0, attempts: 0 });
+
+  // Auto redirect if user is already authenticated (e.g. after Google OAuth return)
+  useEffect(() => {
+    if (currentUser && view !== 'update-password') {
+      const target =
+        currentUser.role === 'provider' ? '/provider' : currentUser.role === 'admin' ? '/admin' : '/doer';
+      navigate(target);
+    }
+  }, [currentUser, view, navigate]);
 
   // Detect recovery URL parameter
   useEffect(() => {

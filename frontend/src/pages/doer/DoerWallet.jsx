@@ -169,10 +169,17 @@ export const DoerWallet = () => {
     setIsProcessing(true);
 
     setTimeout(() => {
+      const isDeUna = bank.includes('DeUna');
       const recipientName = accountHolderName.trim() || 'Titular de Cuenta';
-      const description = `Retiro a cuenta ${bank} - ${accountNumber} (${recipientName})`;
+      const description = isDeUna
+        ? `Retiro a Billetera Móvil DeUna! - Celular ${accountNumber} (${recipientName})`
+        : `Retiro a cuenta ${bank} - ${accountNumber} (${recipientName})`;
 
-      requestWithdrawal(currentUser.id, withdrawAmount, description);
+      const authCode = isDeUna
+        ? `DEUNA-WDR-${Math.floor(100000 + Math.random() * 900000)}`
+        : `AUTH-EC-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      requestWithdrawal(currentUser.id, withdrawAmount, description, isDeUna ? 'deuna' : 'bank_transfer', authCode);
       updateProfile({ balance: (currentUser.balance || 0) - withdrawAmount });
 
       setIsProcessing(false);
@@ -180,11 +187,11 @@ export const DoerWallet = () => {
 
       // Generate official banking voucher with real account holder name
       const newVoucher = {
-        id: `SPI-BCE-${Date.now().toString().slice(-8)}`,
+        id: isDeUna ? `DEUNA-${Date.now().toString().slice(-8)}` : `SPI-BCE-${Date.now().toString().slice(-8)}`,
         amount: withdrawAmount,
         bank,
         accountNumber,
-        accountType,
+        accountType: isDeUna ? 'Billetera Móvil DeUna!' : accountType,
         recipientName: recipientName,
         recipientId: accountHolderId || '1724891024',
         senderName: currentUser.name || 'David',
@@ -192,7 +199,7 @@ export const DoerWallet = () => {
         date: new Date().toISOString(),
         status: 'completed',
         description,
-        authCode: `AUTH-EC-${Math.floor(100000 + Math.random() * 900000)}`,
+        authCode,
         isThirdParty: recipientName.toLowerCase() !== (currentUser.name || '').toLowerCase(),
       };
 
@@ -366,17 +373,26 @@ export const DoerWallet = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Institución Bancaria</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Institución / Billetera Destino</label>
               <select
                 value={bank}
-                onChange={(e) => setBank(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-stitch bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setBank(val);
+                  if (val.includes('DeUna')) {
+                    setAccountType('Billetera Móvil');
+                    if (accountNumber === '20004884874') setAccountNumber('0995001234');
+                  } else {
+                    setAccountType('Ahorros');
+                  }
+                }}
+                className="w-full px-3.5 py-2.5 rounded-stitch bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary font-bold"
               >
                 <option value="Produbanco">Produbanco</option>
                 <option value="Banco Pichincha">Banco Pichincha</option>
                 <option value="Banco Guayaquil">Banco Guayaquil</option>
                 <option value="Banco del Pacífico">Banco del Pacífico</option>
-                <option value="DeUna / Billetera Digital">DeUna / Billetera Digital</option>
+                <option value="DeUna / Billetera Digital">¡DeUna! Billetera Móvil (Banco Pichincha)</option>
                 <option value="Cooperativa JEP">Cooperativa JEP</option>
               </select>
             </div>
@@ -388,22 +404,24 @@ export const DoerWallet = () => {
                 onChange={(e) => setAccountType(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-stitch bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary"
               >
-                <option value="Ahorros">Ahorros</option>
-                <option value="Corriente">Corriente</option>
-                <option value="Billetera Móvil">Billetera Móvil</option>
+                <option value="Ahorros">Cuenta de Ahorros</option>
+                <option value="Corriente">Cuenta Corriente</option>
+                <option value="Billetera Móvil">Billetera Móvil DeUna!</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Número de Cuenta Destino</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              {bank.includes('DeUna') ? 'Número Celular Registrado en DeUna! (Ecuador)' : 'Número de Cuenta Destino'}
+            </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 required
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
-                placeholder="Ej: 20004884874"
+                placeholder={bank.includes('DeUna') ? 'Ej: 0991234567' : 'Ej: 20004884874'}
                 className="flex-1 px-3.5 py-2.5 rounded-stitch bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-primary font-mono"
               />
               <button
@@ -528,16 +546,40 @@ export const DoerWallet = () => {
 
             {/* Scrollable Content Container */}
             <div className="overflow-y-auto flex-1">
-              {/* Header del Voucher Bancario */}
-              <div className="bg-[#0D9488] p-5 text-white text-center relative">
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-2">
-                  <Check className="w-7 h-7 stroke-[3] text-white" />
+              {/* Header del Voucher Bancario o DeUna */}
+              <div
+                className={`${
+                  selectedTxnVoucher.bank?.includes('DeUna')
+                    ? 'bg-gradient-to-r from-[#07241D] via-[#0B3329] to-[#07241D] border-b-2 border-yellow-400'
+                    : 'bg-[#0D9488]'
+                } p-5 text-white text-center relative`}
+              >
+                <div
+                  className={`w-12 h-12 rounded-full ${
+                    selectedTxnVoucher.bank?.includes('DeUna')
+                      ? 'bg-gradient-to-br from-yellow-400 to-emerald-400 text-slate-950 font-black'
+                      : 'bg-white/20 text-white'
+                  } flex items-center justify-center mx-auto mb-2 shadow-md`}
+                >
+                  {selectedTxnVoucher.bank?.includes('DeUna') ? (
+                    <span className="font-black text-xs">!D</span>
+                  ) : (
+                    <Check className="w-7 h-7 stroke-[3] text-white" />
+                  )}
                 </div>
                 <div className="text-[11px] font-black uppercase tracking-widest text-teal-100">
-                  Sistema de Pagos Interbancarios (SPI)
+                  {selectedTxnVoucher.bank?.includes('DeUna')
+                    ? 'Billetera Digital DeUna! · Banco Pichincha'
+                    : 'Sistema de Pagos Interbancarios (SPI)'}
                 </div>
-                <h3 className="text-xl font-black">Transferencia Exitosa</h3>
-                <p className="text-xs text-teal-100 mt-0.5">Banco Central del Ecuador · Red Financiera Nacional</p>
+                <h3 className="text-xl font-black">
+                  {selectedTxnVoucher.bank?.includes('DeUna') ? 'Acreditación DeUna! Exitosa' : 'Transferencia Exitosa'}
+                </h3>
+                <p className="text-xs text-teal-100 mt-0.5">
+                  {selectedTxnVoucher.bank?.includes('DeUna')
+                    ? 'Red Móvil DeUna! · Liquidación Inmediata 0% Comisión'
+                    : 'Banco Central del Ecuador · Red Financiera Nacional'}
+                </p>
               </div>
 
               {/* Cuerpo del Voucher */}

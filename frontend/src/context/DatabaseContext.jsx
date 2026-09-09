@@ -109,6 +109,8 @@ export const DatabaseProvider = ({ children }) => {
               amount: parseFloat(t.amount) || 0,
               description: t.description,
               status: t.status,
+              paymentProvider: t.payment_provider || 'bank_transfer',
+              referenceCode: t.reference_code || '',
               createdAt: t.created_at,
             }))
           );
@@ -299,7 +301,7 @@ export const DatabaseProvider = ({ children }) => {
     return newResponse;
   };
 
-  const requestWithdrawal = async (userId, amount, accountDetails) => {
+  const requestWithdrawal = async (userId, amount, accountDetails, paymentProvider = 'bank_transfer', referenceCode = '') => {
     const newTxn = {
       id: `txn_${Date.now().toString(36)}`,
       userId,
@@ -307,6 +309,8 @@ export const DatabaseProvider = ({ children }) => {
       amount: -Math.abs(amount),
       description: `Retiro a cuenta ${accountDetails || 'bancaria'}`,
       status: 'completed',
+      paymentProvider,
+      referenceCode: referenceCode || `WDR-${Date.now().toString(36).toUpperCase()}`,
       createdAt: new Date().toISOString(),
     };
 
@@ -322,10 +326,49 @@ export const DatabaseProvider = ({ children }) => {
             amount: newTxn.amount,
             description: newTxn.description,
             status: newTxn.status,
+            payment_provider: newTxn.paymentProvider,
+            reference_code: newTxn.referenceCode,
           },
         ]);
       } catch (err) {
         console.warn('Error saving withdrawal to Supabase:', err);
+      }
+    }
+
+    return newTxn;
+  };
+
+  const addCorporateTopUp = async (userId, amount, paymentProvider = 'kushki', referenceCode = '', description = '') => {
+    const newTxn = {
+      id: `txn_${Date.now().toString(36)}`,
+      userId,
+      type: 'topup',
+      amount: Math.abs(amount),
+      description: description || `Recarga corporativa (${paymentProvider.toUpperCase()})`,
+      status: 'completed',
+      paymentProvider,
+      referenceCode: referenceCode || `PAY-${Date.now().toString(36).toUpperCase()}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    setTransactions((prev) => [newTxn, ...prev]);
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('transactions').insert([
+          {
+            id: newTxn.id,
+            user_id: newTxn.userId,
+            type: newTxn.type,
+            amount: newTxn.amount,
+            description: newTxn.description,
+            status: newTxn.status,
+            payment_provider: newTxn.paymentProvider,
+            reference_code: newTxn.referenceCode,
+          },
+        ]);
+      } catch (err) {
+        console.warn('Error saving topup to Supabase:', err);
       }
     }
 
@@ -403,6 +446,7 @@ export const DatabaseProvider = ({ children }) => {
         addSurvey,
         submitResponse,
         requestWithdrawal,
+        addCorporateTopUp,
         saveCustomDashboard,
         deleteCustomDashboard,
       }}

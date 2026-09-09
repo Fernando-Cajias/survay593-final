@@ -697,7 +697,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (data?.url) {
-        // Validar si el proveedor está habilitado sin enviar al usuario a la pantalla negra de error 400
+        // Si es Google (ya activado oficialmente en Supabase), redirigir de inmediato a Google
+        if (targetProvider === 'google') {
+          window.location.href = data.url;
+          return { success: true, data };
+        }
+
+        // Para otros proveedores aún no activados en Supabase, validar antes de redirigir
         try {
           const checkRes = await fetch(data.url);
           if (checkRes.status === 400) {
@@ -712,10 +718,10 @@ export const AuthProvider = ({ children }) => {
             }
           }
         } catch (fetchErr) {
-          // Si hubo error de red o redirect opaco de CORS por parte de Google/Microsoft, es seguro continuar
+          // Si hubo error de red o CORS, continuar
         }
 
-        // Si el proveedor está habilitado en Supabase, redirigir oficialmente
+        // Redirigir oficialmente
         window.location.href = data.url;
         return { success: true, data };
       }

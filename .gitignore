@@ -28,4 +28,5 @@ dist-ssr/
 # Private Internal Guides & PDFs (Never upload to GitHub)
 *.pdf
 docs/privado/
+CREDENCIALES_SISTEMA.md
 

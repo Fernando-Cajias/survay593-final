@@ -28,6 +28,7 @@ import { DashboardStudio } from './pages/provider/DashboardStudio';
 import { CustomDashboardsList } from './pages/provider/CustomDashboardsList';
 import { LiveDashboardView } from './pages/provider/LiveDashboardView';
 import { OnboardingInstitution } from './pages/provider/OnboardingInstitution';
+import { ProviderSettings } from './pages/provider/ProviderSettings';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -68,6 +69,7 @@ export const App = () => {
                 <Route path="/provider/results/:id" element={<SurveyResults />} />
                 <Route path="/provider/campaigns" element={<ProviderCampaigns />} />
                 <Route path="/provider/billing" element={<ProviderBilling />} />
+                <Route path="/provider/settings" element={<ProviderSettings />} />
                 <Route path="/provider/studio" element={<DashboardStudio />} />
                 <Route path="/provider/studio/edit/:id" element={<DashboardStudio />} />
                 <Route path="/provider/dashboards" element={<CustomDashboardsList />} />

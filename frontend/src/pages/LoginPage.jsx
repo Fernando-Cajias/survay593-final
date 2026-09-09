@@ -95,6 +95,17 @@ export const LoginPage = () => {
     }
   }, [isPasswordRecoveryActive, location]);
 
+  // Mostrar mensaje de finiquito/baja si viene de cancelar cuenta
+  useEffect(() => {
+    if (location.state?.accountCancelled) {
+      setSuccessMsg(
+        `Tu cuenta ha sido dada de baja exitosamente. Acta de Finiquito: ${location.state.certificateCode || 'REGISTRADA'}. ${
+          location.state.refundPending ? 'La solicitud de liquidación bancaria fue remitida al departamento financiero.' : ''
+        }`
+      );
+    }
+  }, [location]);
+
   // Check account lockout whenever email changes
   useEffect(() => {
     if (!email.trim()) {

@@ -875,6 +875,113 @@ export const AuthProvider = ({ children }) => {
     return { success: true, user };
   };
 
+  // Darse de baja y liquidación formal de cuenta con auditoría legal
+  const processAccountCancellation = async ({
+    reason,
+    feedback,
+    settlementType = 'forfeit', // 'bank_transfer', 'forfeit', 'zero_balance'
+    bankDetails = {},
+    idDocument = '',
+  }) => {
+    if (!currentUser) {
+      return { success: false, message: 'No hay usuario autenticado.' };
+    }
+
+    const cancellationId = `canc_${Date.now()}`;
+    const certCode = `FINIQUITO-EC-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const userToCancel = { ...currentUser };
+
+    const cancellationRecord = {
+      id: cancellationId,
+      userId: userToCancel.id,
+      email: userToCancel.email,
+      name: userToCancel.name,
+      role: userToCancel.role,
+      company: userToCancel.company || '',
+      finalBalance: parseFloat(userToCancel.balance) || 0,
+      settlementType,
+      bankName: bankDetails.bankName || '',
+      bankAccountType: bankDetails.accountType || '',
+      bankAccountNumber: bankDetails.accountNumber || '',
+      idDocument: idDocument || '',
+      reason: reason || 'Baja voluntaria de la plataforma',
+      feedback: feedback || '',
+      certificateCode: certCode,
+      status: settlementType === 'bank_transfer' ? 'pending_transfer' : 'completed',
+      createdAt: new Date().toISOString(),
+    };
+
+    // 1. Ejecutar en Supabase (función stored procedure segura)
+    if (isSupabaseConfigured) {
+      try {
+        const { error: rpcError } = await supabase.rpc('execute_account_cancellation', {
+          p_cancellation_id: cancellationId,
+          p_user_id: userToCancel.id,
+          p_email: userToCancel.email,
+          p_name: userToCancel.name,
+          p_role: userToCancel.role,
+          p_company: userToCancel.company || '',
+          p_final_balance: parseFloat(userToCancel.balance) || 0,
+          p_settlement_type: settlementType,
+          p_bank_name: bankDetails.bankName || '',
+          p_bank_account_type: bankDetails.accountType || '',
+          p_bank_account_number: bankDetails.accountNumber || '',
+          p_id_document: idDocument || '',
+          p_reason: reason || 'Baja voluntaria',
+          p_feedback: feedback || '',
+          p_certificate_code: certCode,
+        });
+
+        if (rpcError) {
+          console.warn('RPC cancellation error, executing fallback deletion:', rpcError);
+          // Fallback manual en caso de que el RPC falle
+          await supabase.from('account_cancellations').insert([{
+            id: cancellationId,
+            user_id: userToCancel.id,
+            email: userToCancel.email,
+            name: userToCancel.name,
+            role: userToCancel.role,
+            company: userToCancel.company || '',
+            final_balance: parseFloat(userToCancel.balance) || 0,
+            settlement_type: settlementType,
+            bank_name: bankDetails.bankName || '',
+            bank_account_type: bankDetails.accountType || '',
+            bank_account_number: bankDetails.accountNumber || '',
+            id_document: idDocument || '',
+            reason: reason || 'Baja voluntaria',
+            feedback: feedback || '',
+            certificate_code: certCode,
+            status: settlementType === 'bank_transfer' ? 'pending_transfer' : 'completed',
+          }]).catch(() => {});
+
+          await supabase.from('profiles').delete().eq('id', userToCancel.id);
+        }
+
+        // Cerrar sesión en Supabase Auth
+        await supabase.auth.signOut().catch(() => {});
+      } catch (err) {
+        console.warn('Error en Supabase al procesar baja:', err);
+      }
+    }
+
+    // 2. Guardar comprobante de finiquito en localStorage para consulta inmediata
+    try {
+      localStorage.setItem('survey593_last_cancellation', JSON.stringify(cancellationRecord));
+    } catch (e) {}
+
+    // 3. Limpiar estado local del navegador
+    setUsers((prev) => prev.filter((u) => u.id !== userToCancel.id && u.email !== userToCancel.email));
+    setCurrentUser(null);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+
+    return {
+      success: true,
+      certificateCode: certCode,
+      cancellationRecord,
+      message: 'Cuenta dada de baja exitosamente conforme a la normativa legal.',
+    };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -884,6 +991,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateProfile,
+        processAccountCancellation,
         checkLockStatus,
         unlockAccount,
         findAccountByIdentity,

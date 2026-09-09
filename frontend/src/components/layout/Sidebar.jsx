@@ -19,6 +19,7 @@ import {
   LogOut,
   School,
   Building2,
+  Settings,
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -76,6 +77,7 @@ export const Sidebar = () => {
             items: [
               { label: 'Resultados', icon: BarChart3, path: '/provider/results' },
               { label: 'Facturación', icon: CreditCard, path: '/provider/billing' },
+              { label: 'Configuración & Cuenta', icon: Settings, path: '/provider/settings' },
             ],
           },
         ];
@@ -108,6 +110,8 @@ export const Sidebar = () => {
     logout();
     navigate('/login');
   };
+
+  const profileLink = currentUser.role === 'provider' ? '/provider/settings' : currentUser.role === 'doer' ? '/doer/profile' : '/admin';
 
   return (
     <aside className="fixed top-0 left-0 bottom-0 w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between z-30 select-none">
@@ -172,7 +176,11 @@ export const Sidebar = () => {
       {/* User Footer & Logout */}
       <div className="p-4 border-t border-slate-800">
         <div className="flex items-center justify-between p-2 rounded-stitch bg-slate-800/60 border border-slate-700/50">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <Link
+            to={profileLink}
+            title="Ir a mi configuración"
+            className="flex items-center gap-2.5 min-w-0 hover:opacity-85 transition-opacity flex-1 mr-2"
+          >
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
               style={{ backgroundColor: currentUser.avatarColor || '#0D9488' }}
@@ -188,7 +196,7 @@ export const Sidebar = () => {
               <div className="text-xs font-bold text-white truncate">{currentUser.name}</div>
               <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
             </div>
-          </div>
+          </Link>
           <button
             onClick={handleLogout}
             title="Cerrar sesión"

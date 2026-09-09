@@ -29,7 +29,18 @@ import {
   Sparkles,
   School,
   X,
+  Smartphone,
 } from 'lucide-react';
+
+// Detección automática de franquicia de tarjeta (Ecuador y global)
+const detectCardBrand = (number) => {
+  const clean = (number || '').replace(/\D/g, '');
+  if (clean.startsWith('4')) return { brand: 'VISA', label: 'Visa' };
+  if (/^(5[1-5]|2[2-7])/.test(clean)) return { brand: 'MASTERCARD', label: 'Mastercard' };
+  if (/^3[47]/.test(clean)) return { brand: 'AMEX', label: 'American Express' };
+  if (/^3(0[0-5]|[68])/.test(clean)) return { brand: 'DINERS', label: 'Diners Club' };
+  return { brand: 'GENERIC', label: 'Tarjeta' };
+};
 
 export const CreateSurveyWizard = () => {
   const navigate = useNavigate();
@@ -50,17 +61,27 @@ export const CreateSurveyWizard = () => {
   const platformFee = escrowFund * 0.35; // 35% platform fee
   const totalInvestment = escrowFund + platformFee;
 
-  // Payment Gateway States
-  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'transfer' | 'balance'
+  // Payment Gateway States ('balance' | 'kushki' | 'deuna' | 'transfer')
+  const [paymentMethod, setPaymentMethod] = useState(
+    (currentUser?.balance || 0) >= totalInvestment ? 'balance' : 'kushki'
+  );
   const [isFinancing, setIsFinancing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [paymentSuccessReceipt, setPaymentSuccessReceipt] = useState(null);
 
-  // Card form state
+  // Kushki Card form state
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState(currentUser.company || currentUser.name || '');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
+  const [cardIdDoc, setCardIdDoc] = useState(currentUser.ruc || currentUser.cedula || '1790012345001');
+  const [installments, setInstallments] = useState('1');
+
+  // DeUna form state
+  const [deunaTab, setDeUnaTab] = useState('qr'); // 'qr' | 'phone'
+  const [deunaPhone, setDeUnaPhone] = useState('0991234567');
+  const [deunaPushSent, setDeUnaPushSent] = useState(false);
+  const [deunaQrReference] = useState(`DU-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`);
 
   // Bank transfer form state
   const [transferBank, setTransferBank] = useState('Produbanco');
@@ -126,19 +147,34 @@ export const CreateSurveyWizard = () => {
   const handlePublishAndFinance = () => {
     setErrorMsg('');
 
+    const cardInfo = detectCardBrand(cardNumber);
+
     // Validations based on chosen payment method
-    if (paymentMethod === 'card') {
-      if (!cardNumber.trim() || cardNumber.replace(/\s/g, '').length < 15) {
-        setErrorMsg('Por favor ingresa un número de tarjeta de crédito/débito válido (16 dígitos).');
+    if (paymentMethod === 'kushki') {
+      const cleanNum = cardNumber.replace(/\s/g, '');
+      if (!cleanNum || cleanNum.length < 15) {
+        setErrorMsg('Por favor ingresa los 16 dígitos de tu tarjeta en el formulario de Kushki.');
         return;
       }
       if (!cardExpiry.trim() || !cardExpiry.includes('/')) {
-        setErrorMsg('Ingresa la fecha de expiración en formato MM/AA.');
+        setErrorMsg('Ingresa la fecha de vencimiento de tu tarjeta en formato MM/AA.');
         return;
       }
       if (!cardCvv.trim() || cardCvv.length < 3) {
-        setErrorMsg('Ingresa el código de seguridad CVV (3 o 4 dígitos).');
+        setErrorMsg('Ingresa el código CVV de seguridad de 3 dígitos de tu tarjeta.');
         return;
+      }
+      if (!cardIdDoc.trim()) {
+        setErrorMsg('Ingresa tu número de Cédula o RUC para la factura electrónica.');
+        return;
+      }
+    } else if (paymentMethod === 'deuna') {
+      if (deunaTab === 'phone') {
+        const cleanPhone = deunaPhone.replace(/\D/g, '');
+        if (cleanPhone.length !== 10 || !cleanPhone.startsWith('09')) {
+          setErrorMsg('Por favor ingresa un número celular de Ecuador válido (ej: 0991234567).');
+          return;
+        }
       }
     } else if (paymentMethod === 'transfer') {
       if (!transferRef.trim()) {
@@ -148,7 +184,7 @@ export const CreateSurveyWizard = () => {
     } else if (paymentMethod === 'balance') {
       if ((currentUser.balance || 0) < totalInvestment) {
         setErrorMsg(
-          `Tu saldo corporativo actual es de $${(currentUser.balance || 0).toFixed(2)} USD, pero la campaña requiere $${totalInvestment.toFixed(2)} USD. Elige pagar con Tarjeta o Transferencia Bancaria.`
+          `Tu saldo actual es de $${(currentUser.balance || 0).toFixed(2)} USD, pero se requieren $${totalInvestment.toFixed(2)} USD. Puedes pagar la diferencia con Kushki o DeUna!.`
         );
         return;
       }
@@ -183,6 +219,18 @@ export const CreateSurveyWizard = () => {
 
       const createdSurvey = addSurvey(surveyData, questions);
 
+      // Description of payment method for invoice
+      let paymentLabel = 'Débito de Saldo Corporativo en Plataforma';
+      if (paymentMethod === 'kushki') {
+        paymentLabel = `Kushki Gateway - ${cardInfo.label} •••• ${cardNumber.replace(/\s/g, '').slice(-4)} (${
+          installments === '1' ? 'Corriente' : `${installments} meses diferido`
+        })`;
+      } else if (paymentMethod === 'deuna') {
+        paymentLabel = `Billetera Móvil DeUna! Banco Pichincha (Ref: ${deunaQrReference})`;
+      } else if (paymentMethod === 'transfer') {
+        paymentLabel = `Transferencia Bancaria Directa ${transferBank} (Ref: ${transferRef})`;
+      }
+
       // Generate B2B Corporate Invoice & Receipt
       const receipt = {
         invoiceNumber: `FAC-001-002-00${Math.floor(100000 + Math.random() * 900000)}`,
@@ -198,12 +246,7 @@ export const CreateSurveyWizard = () => {
         escrowFund,
         platformFee,
         totalInvestment,
-        paymentMethod:
-          paymentMethod === 'card'
-            ? `Tarjeta de Crédito/Débito terminada en •••• ${cardNumber.slice(-4)}`
-            : paymentMethod === 'transfer'
-            ? `Transferencia ${transferBank} (Ref: ${transferRef})`
-            : 'Débito de Saldo Corporativo en Plataforma',
+        paymentMethod: paymentLabel,
         date: new Date().toISOString(),
         surveyId: createdSurvey.id,
       };
@@ -552,182 +595,448 @@ export const CreateSurveyWizard = () => {
         </div>
       )}
 
-      {/* Step 4: PASARELA DE PAGO REAL (Tarjeta o Transferencia Bancaria Directa) */}
+      {/* Step 4: PASARELA DE PAGO Y FONDEO PROFESIONAL (Kushki, DeUna, Saldo y Transferencia) */}
       {step === 4 && (
-        <div className="glass-card p-6 space-y-5 animate-fade-in">
-          <div className="flex items-center justify-between">
+        <div className="glass-card p-6 space-y-6 animate-fade-in">
+          {/* Encabezado Descansado y Claro */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
             <div>
-              <h3 className="text-base font-bold text-white">4. Pasarela de Pago & Fondeo de Campaña</h3>
-              <p className="text-xs text-slate-400">
-                Paga de forma segura para activar el estudio y reservar los fondos de los encuestados.
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-black text-white">4. Fondeo y Activación de tu Estudio</h3>
+                <Badge variant="primary" className="text-[10px]">
+                  Paso Final
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Elige tu forma de pago preferida para reservar los incentivos de los ciudadanos y lanzar la encuesta.
               </p>
             </div>
-            <div className="text-right">
-              <span className="text-xs text-slate-400">Total a Pagar:</span>
-              <div className="text-xl font-black text-primary-light font-mono">${totalInvestment.toFixed(2)} USD</div>
+            <div className="sm:text-right bg-slate-900/80 p-3 rounded-xl border border-slate-800 sm:border-0 sm:p-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total a Invertir:</span>
+              <div className="text-2xl font-black text-emerald-400 font-mono">${totalInvestment.toFixed(2)} USD</div>
+            </div>
+          </div>
+
+          {/* Resumen Financiero Transparente y Amigable */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/20 text-primary-light flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Muestra Contratada</div>
+                <div className="text-sm font-black text-white">{targetResponses} respuestas</div>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Recompensa x Persona</div>
+                <div className="text-sm font-black text-white">${rewardPerResponse.toFixed(2)} USD c/u</div>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Garantía Escrow</div>
+                <div className="text-xs font-semibold text-slate-300">100% Protegido (Reembolsable)</div>
+              </div>
             </div>
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-stitch bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-bold flex items-center gap-2.5 animate-shake">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Selector de Método de Pago */}
+          {/* Selector de Método de Pago (Grid de 4 Opciones Nítidas) */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-              Elige cómo deseas pagar:
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2.5">
+              Selecciona cómo deseas pagar tu estudio:
             </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {/* Opción 1: Tarjeta de Crédito / Débito */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`p-3.5 rounded-stitch border text-left transition-all ${
-                  paymentMethod === 'card'
-                    ? 'border-primary bg-primary/10 text-white shadow-glow-sm'
-                    : 'border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600'
-                }`}
-              >
-                <CreditCard className="w-5 h-5 text-primary-light mb-1.5" />
-                <div className="text-xs font-bold text-white">Tarjeta de Crédito/Débito</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">Visa, Mastercard, Diners</div>
-              </button>
-
-              {/* Opción 2: Transferencia Bancaria Directa */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('transfer')}
-                className={`p-3.5 rounded-stitch border text-left transition-all ${
-                  paymentMethod === 'transfer'
-                    ? 'border-emerald-500 bg-emerald-500/10 text-white shadow-glow-sm'
-                    : 'border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600'
-                }`}
-              >
-                <Building2 className="w-5 h-5 text-emerald-400 mb-1.5" />
-                <div className="text-xs font-bold text-white">Transferencia Bancaria</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">Banco Pichincha / Produbanco</div>
-              </button>
-
-              {/* Opción 3: Saldo Pre-pagado */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Opción 1: Saldo Disponible en Cuenta */}
               <button
                 type="button"
                 onClick={() => setPaymentMethod('balance')}
-                className={`p-3.5 rounded-stitch border text-left transition-all ${
+                className={`p-4 rounded-xl border text-left transition-all relative ${
                   paymentMethod === 'balance'
-                    ? 'border-secondary bg-secondary/10 text-white shadow-glow-sm'
-                    : 'border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600'
+                    ? 'border-emerald-500 bg-emerald-950/30 shadow-lg shadow-emerald-950/40'
+                    : 'border-slate-800 bg-slate-900/70 hover:border-slate-700'
                 }`}
               >
-                <Wallet className="w-5 h-5 text-secondary-light mb-1.5" />
-                <div className="text-xs font-bold text-white">Saldo en Cuenta</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">
-                  ${(currentUser.balance || 0).toFixed(2)} USD disponibles
+                {(currentUser?.balance || 0) >= totalInvestment && (
+                  <span className="absolute -top-2 right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] uppercase tracking-wider">
+                    Recomendado 1 Clic
+                  </span>
+                )}
+                <Wallet className="w-6 h-6 text-emerald-400 mb-2" />
+                <div className="text-xs font-black text-white">Saldo en Cuenta</div>
+                <div className="text-[11px] text-emerald-400 font-mono font-bold mt-0.5">
+                  ${(currentUser?.balance || 0).toFixed(2)} USD
                 </div>
+                <div className="text-[10px] text-slate-400 mt-1">Sin trámites ni tarjetas</div>
+              </button>
+
+              {/* Opción 2: Kushki Gateway (Tarjetas & Diferidos) */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('kushki')}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  paymentMethod === 'kushki'
+                    ? 'border-cyan-500 bg-cyan-950/30 shadow-lg shadow-cyan-950/40'
+                    : 'border-slate-800 bg-slate-900/70 hover:border-slate-700'
+                }`}
+              >
+                <CreditCard className="w-6 h-6 text-cyan-400 mb-2" />
+                <div className="text-xs font-black text-white">Kushki Gateway</div>
+                <div className="text-[11px] text-cyan-300 font-bold mt-0.5">Tarjetas & Diferidos</div>
+                <div className="text-[10px] text-slate-400 mt-1">Visa, Mastercard, Diners, Amex</div>
+              </button>
+
+              {/* Opción 3: Billetera Digital DeUna! */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('deuna')}
+                className={`p-4 rounded-xl border text-left transition-all relative ${
+                  paymentMethod === 'deuna'
+                    ? 'border-yellow-400 bg-yellow-950/30 shadow-lg shadow-yellow-950/40'
+                    : 'border-slate-800 bg-slate-900/70 hover:border-slate-700'
+                }`}
+              >
+                <span className="absolute -top-2 right-3 px-2 py-0.5 rounded-full bg-yellow-400 text-slate-950 font-black text-[9px] uppercase tracking-wider">
+                  0% Comisión
+                </span>
+                <QrCode className="w-6 h-6 text-yellow-400 mb-2" />
+                <div className="text-xs font-black text-white">Billetera ¡DeUna!</div>
+                <div className="text-[11px] text-yellow-300 font-bold mt-0.5">Banco Pichincha</div>
+                <div className="text-[10px] text-slate-400 mt-1">Código QR o desde tu celular</div>
+              </button>
+
+              {/* Opción 4: Transferencia Directa SPI */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('transfer')}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  paymentMethod === 'transfer'
+                    ? 'border-primary bg-primary/15 shadow-lg shadow-primary/20'
+                    : 'border-slate-800 bg-slate-900/70 hover:border-slate-700'
+                }`}
+              >
+                <Building2 className="w-6 h-6 text-primary-light mb-2" />
+                <div className="text-xs font-black text-white">Transferencia SPI</div>
+                <div className="text-[11px] text-primary-light font-bold mt-0.5">Banca en Línea</div>
+                <div className="text-[10px] text-slate-400 mt-1">Pichincha / Produbanco</div>
               </button>
             </div>
           </div>
 
           {/* ========================================================================= */}
-          {/* CASO 1: FORMULARIO PASARELA TARJETA DE CRÉDITO / DÉBITO                   */}
+          {/* CASO 1: SALDO EN CUENTA (PAGO RÁPIDO 1-CLIC)                              */}
           {/* ========================================================================= */}
-          {paymentMethod === 'card' && (
-            <div className="p-5 rounded-stitch-lg bg-slate-900/90 border border-slate-700/80 space-y-4 animate-fade-in">
+          {paymentMethod === 'balance' && (
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-emerald-500/40 space-y-4 animate-fade-in">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-white">
-                  <Lock className="w-4 h-4 text-emerald-400" />
-                  <span>Pasarela de Pago Segura con Cifrado SSL 256-bit</span>
+                  <Wallet className="w-4 h-4 text-emerald-400" />
+                  <span>Fondeo Directo con Saldo Corporativo Disponible</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black tracking-widest text-slate-400">VISA / MASTERCARD</span>
+                <Badge variant="success" dot>Acreditación Instantánea</Badge>
+              </div>
+
+              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Saldo actual en tu cuenta:</span>
+                  <span className="font-mono font-bold text-white text-sm">
+                    ${(currentUser?.balance || 0).toFixed(2)} USD
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-primary-light">
+                  <span>Costo total de la campaña (Incentivos + Fee):</span>
+                  <span className="font-mono font-bold text-sm">
+                    -${totalInvestment.toFixed(2)} USD
+                  </span>
+                </div>
+                <div className="border-t border-slate-800 pt-2 flex justify-between items-center">
+                  <span className="font-bold text-slate-300">Saldo remanente tras publicar:</span>
+                  <span className="font-mono font-black text-emerald-400 text-sm">
+                    ${Math.max(0, (currentUser?.balance || 0) - totalInvestment).toFixed(2)} USD
+                  </span>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nombre en la Tarjeta</label>
-                <input
-                  type="text"
-                  required
-                  value={cardHolder}
-                  onChange={(e) => setCardHolder(e.target.value)}
-                  placeholder="Ej: ORIÓN TECHNOLOGIES S.A."
-                  className="w-full px-3.5 py-2.5 rounded-stitch bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary uppercase font-mono"
-                />
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                💡 <strong className="text-slate-300">Comodidad garantizada:</strong> Al hacer clic en el botón de abajo, tu estudio se activará de forma inmediata sin necesidad de ingresar números de tarjeta ni salir de la plataforma.
+              </p>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* CASO 2: KUSHKI GATEWAY (TARJETAS & DIFERIDOS ECUADOR)                     */}
+          {/* ========================================================================= */}
+          {paymentMethod === 'kushki' && (
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-cyan-500/40 space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-white">
+                  <Lock className="w-4 h-4 text-cyan-400" />
+                  <span>Kushki Gateway · Cifrado Bancario y Diferidos Nacionales</span>
+                </div>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
+                  PCI-DSS Level 1
+                </span>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Número de Tarjeta</label>
-                <div className="relative">
+              {/* Formulario Amigable de Tarjeta */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Nombre como figura en la tarjeta <span className="text-cyan-400">*</span>
+                  </label>
                   <input
                     type="text"
-                    maxLength="19"
                     required
-                    value={cardNumber}
-                    onChange={(e) => {
-                      // Format with spaces: 4444 4444 4444 4444
-                      const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-                      setCardNumber(val);
-                    }}
-                    placeholder="4000 1234 5678 9010"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-stitch bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary font-mono tracking-wider"
-                  />
-                  <CreditCard className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Fecha de Expiración</label>
-                  <input
-                    type="text"
-                    maxLength="5"
-                    required
-                    value={cardExpiry}
-                    onChange={(e) => {
-                      let val = e.target.value.replace(/\D/g, '');
-                      if (val.length >= 2) val = `${val.slice(0, 2)}/${val.slice(2, 4)}`;
-                      setCardExpiry(val);
-                    }}
-                    placeholder="MM/AA (ej: 08/28)"
-                    className="w-full px-3.5 py-2.5 rounded-stitch bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary font-mono text-center"
+                    value={cardHolder}
+                    onChange={(e) => setCardHolder(e.target.value)}
+                    placeholder="Ej: TEXTIL ANDINA S.A. o JUAN PÉREZ"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white uppercase text-xs focus:outline-none focus:border-cyan-400 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Código de Seguridad (CVV)</label>
-                  <input
-                    type="password"
-                    maxLength="4"
-                    required
-                    value={cardCvv}
-                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
-                    placeholder="•••"
-                    className="w-full px-3.5 py-2.5 rounded-stitch bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary font-mono text-center"
-                  />
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Número de Tarjeta (16 dígitos) <span className="text-cyan-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      maxLength="19"
+                      required
+                      value={cardNumber}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                        setCardNumber(val);
+                      }}
+                      placeholder="4000 1234 5678 9010"
+                      className="w-full pl-10 pr-20 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-cyan-400 font-mono tracking-wider"
+                    />
+                    <CreditCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <span className="absolute right-3 top-2.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">
+                      {detectCardBrand(cardNumber).label}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Vencimiento (MM/AA) <span className="text-cyan-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength="5"
+                      required
+                      value={cardExpiry}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.length >= 2) val = `${val.slice(0, 2)}/${val.slice(2, 4)}`;
+                        setCardExpiry(val);
+                      }}
+                      placeholder="08/28"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-cyan-400 font-mono text-center"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Código CVV <span className="text-cyan-400">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      maxLength="4"
+                      required
+                      value={cardCvv}
+                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
+                      placeholder="•••"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-cyan-400 font-mono text-center"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Cédula / RUC (SRI) <span className="text-cyan-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={cardIdDoc}
+                      onChange={(e) => setCardIdDoc(e.target.value)}
+                      placeholder="1790012345001"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-cyan-400 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Plan de Pago / Cuotas
+                    </label>
+                    <select
+                      value={installments}
+                      onChange={(e) => setInstallments(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-cyan-400 font-semibold"
+                    >
+                      <option value="1">1 pago corriente (${totalInvestment.toFixed(2)} USD)</option>
+                      <option value="3">3 meses sin intereses (${(totalInvestment / 3).toFixed(2)}/mes)</option>
+                      <option value="6">6 meses diferido (${(totalInvestment / 6 * 1.04).toFixed(2)}/mes)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-3 rounded-stitch bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
                 <span>Total a debitar de tu tarjeta:</span>
-                <span className="text-emerald-400 font-bold text-sm">${totalInvestment.toFixed(2)} USD</span>
+                <span className="text-cyan-300 font-black text-sm font-mono">${totalInvestment.toFixed(2)} USD</span>
               </div>
             </div>
           )}
 
           {/* ========================================================================= */}
-          {/* CASO 2: TRANSFERENCIA BANCARIA EMPRESARIAL (DATOS OFICIALES DE KOLAB)      */}
+          {/* CASO 3: BILLETERA MÓVIL ¡DEUNA! (BANCO PICHINCHA)                         */}
           {/* ========================================================================= */}
-          {paymentMethod === 'transfer' && (
-            <div className="p-5 rounded-stitch-lg bg-slate-900/90 border border-emerald-500/40 space-y-4 animate-fade-in">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 border-b border-slate-800 pb-2.5">
-                <Building2 className="w-4 h-4" />
-                <span>Datos Bancarios para Transferencia Empresarial (Red SPI Ecuador)</span>
+          {paymentMethod === 'deuna' && (
+            <div className="p-5 rounded-2xl bg-[#0B171F] border border-yellow-400/40 space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-white">
+                  <QrCode className="w-4 h-4 text-yellow-400" />
+                  <span>Billetera Móvil ¡DeUna! · Banco Pichincha (Ecuador)</span>
+                </div>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-yellow-400/20 text-yellow-300 font-bold border border-yellow-400/40">
+                  Liquidación 0% Comisión
+                </span>
               </div>
 
-              <div className="bg-slate-950 p-3.5 rounded-stitch border border-slate-800 text-xs space-y-2">
+              {/* Selector de Modo: QR vs Celular */}
+              <div className="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setDeUnaTab('qr')}
+                  className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${
+                    deunaTab === 'qr'
+                      ? 'bg-gradient-to-r from-yellow-400 to-emerald-400 text-slate-950 font-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <QrCode className="w-4 h-4" /> Escanear Código QR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeUnaTab('phone')}
+                  className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${
+                    deunaTab === 'phone'
+                      ? 'bg-gradient-to-r from-yellow-400 to-emerald-400 text-slate-950 font-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4" /> Cobro a mi Celular
+                </button>
+              </div>
+
+              {deunaTab === 'qr' && (
+                <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-xl bg-slate-950/80 border border-slate-800">
+                  {/* QR Code Container */}
+                  <div className="p-3 bg-white rounded-2xl w-40 h-40 flex items-center justify-center shrink-0 border-4 border-yellow-400 shadow-xl relative">
+                    <QrCode className="w-32 h-32 text-slate-950" />
+                    <div className="absolute w-8 h-8 rounded-lg bg-yellow-400 flex items-center justify-center font-black text-slate-950 text-[9px] border border-slate-900">
+                      !D
+                    </div>
+                  </div>
+
+                  {/* Instrucciones 1-2-3 Fáciles de Entender */}
+                  <div className="space-y-2 text-xs">
+                    <div className="font-bold text-white text-sm flex items-center gap-2">
+                      <span>¿Cómo pagar en 3 pasos sencillos?</span>
+                    </div>
+                    <ol className="space-y-1.5 text-slate-300 text-[11px]">
+                      <li className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-yellow-400/20 text-yellow-400 flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
+                        <span>Abre tu aplicación <strong>DeUna!</strong> en tu celular.</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-yellow-400/20 text-yellow-400 flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
+                        <span>Toca en <strong>"Escanear QR"</strong> y enfoca este código en pantalla.</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-yellow-400/20 text-yellow-400 flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
+                        <span>Confirma el valor exacto de <strong className="text-emerald-400 font-mono">${totalInvestment.toFixed(2)} USD</strong>.</span>
+                      </li>
+                    </ol>
+                    <div className="text-[10px] text-slate-400 pt-1">
+                      Ref: <span className="font-mono text-yellow-300">{deunaQrReference}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {deunaTab === 'phone' && (
+                <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3 text-xs">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Número Celular Registrado en DeUna! (Ecuador)
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="tel"
+                          maxLength={10}
+                          value={deunaPhone}
+                          onChange={(e) => setDeUnaPhone(e.target.value.replace(/\D/g, ''))}
+                          placeholder="0991234567"
+                          className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono font-bold text-sm focus:outline-none focus:border-yellow-400"
+                        />
+                        <Smartphone className="w-4 h-4 text-yellow-400 absolute left-3 top-3" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDeUnaPushSent(true)}
+                        className="px-4 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs transition-colors shrink-0"
+                      >
+                        {deunaPushSent ? '¡Notificación Enviada!' : 'Enviar Notificación'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {deunaPushSent && (
+                    <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-[11px] text-emerald-300 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                      <span>Revisa tu app DeUna en el celular <strong>{deunaPhone}</strong> y pulsa "Aprobar Pago". Luego presiona el botón verde de abajo.</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* CASO 4: TRANSFERENCIA BANCARIA EMPRESARIAL (RED SPI)                       */}
+          {/* ========================================================================= */}
+          {paymentMethod === 'transfer' && (
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-primary/40 space-y-4 animate-fade-in">
+              <div className="flex items-center gap-2 text-xs font-bold text-primary-light border-b border-slate-800 pb-2.5">
+                <Building2 className="w-4 h-4" />
+                <span>Datos Bancarios Oficiales para Transferencia Directa (Red SPI Ecuador)</span>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Institución Financiera:</span>
                   <span className="font-bold text-white">BANCO PICHINCHA</span>
@@ -736,60 +1045,55 @@ export const CreateSurveyWizard = () => {
                   <span className="text-slate-400">Tipo de Cuenta:</span>
                   <span className="font-semibold text-white">Cuenta Corriente Empresarial</span>
                 </div>
-                <div className="flex justify-between items-center bg-slate-900/80 p-2 rounded-stitch border border-slate-700">
+                <div className="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-700">
                   <span className="text-slate-300 font-medium">Número de Cuenta:</span>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-emerald-400 text-sm">2100849201</span>
                     <button
                       type="button"
                       onClick={handleCopyAccount}
-                      className="text-slate-400 hover:text-white p-1"
+                      className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
                       title="Copiar número de cuenta"
                     >
-                      {copiedAccount ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedAccount ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Beneficiario / Razón Social:</span>
-                  <span className="font-bold text-white">KOLAB TECH S.A.S.</span>
+                  <span className="font-bold text-white">SURVEY 593 S.A.S. / KOLAB</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">R.U.C.:</span>
                   <span className="font-mono text-slate-200">1793204829001</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Correo para Notificación:</span>
-                  <span className="font-semibold text-primary-light">facturacion@kolab.ec</span>
-                </div>
                 <div className="flex justify-between items-center pt-2 border-t border-slate-800">
                   <span className="text-slate-400 font-bold">Monto Exacto a Transferir:</span>
-                  <span className="font-mono font-black text-emerald-400 text-sm">${totalInvestment.toFixed(2)} USD</span>
+                  <span className="font-mono font-black text-emerald-400 text-base">${totalInvestment.toFixed(2)} USD</span>
                 </div>
               </div>
 
-              {/* Registro de la Transferencia Realizada */}
-              <div className="space-y-3 pt-1">
+              {/* Registro de la Referencia */}
+              <div className="space-y-3 pt-1 text-xs">
                 <label className="block text-xs font-bold text-slate-300">
-                  Registra los datos de tu comprobante de transferencia:
+                  Registra el comprobante de tu transferencia:
                 </label>
-
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">Banco desde el que transferiste</label>
+                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">Banco Origen</label>
                     <select
                       value={transferBank}
                       onChange={(e) => setTransferBank(e.target.value)}
-                      className="w-full px-3 py-2 rounded-stitch bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary"
                     >
                       <option value="Produbanco">Produbanco</option>
                       <option value="Banco Pichincha">Banco Pichincha</option>
                       <option value="Banco Guayaquil">Banco Guayaquil</option>
                       <option value="Banco del Pacífico">Banco del Pacífico</option>
                       <option value="Cooperativa JEP">Cooperativa JEP</option>
+                      <option value="Otro Banco Nacional">Otro Banco Nacional</option>
                     </select>
                   </div>
-
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 mb-1">Número de Referencia / Comprobante</label>
                     <input
@@ -798,7 +1102,7 @@ export const CreateSurveyWizard = () => {
                       value={transferRef}
                       onChange={(e) => setTransferRef(e.target.value)}
                       placeholder="Ej: REF-4920194"
-                      className="w-full px-3 py-2 rounded-stitch bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary font-mono font-bold"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-primary font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -806,51 +1110,37 @@ export const CreateSurveyWizard = () => {
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* CASO 3: SALDO PRE-CARGADO EN CUENTA CORPORATIVA                          */}
-          {/* ========================================================================= */}
-          {paymentMethod === 'balance' && (
-            <div className="p-5 rounded-stitch-lg bg-slate-900/90 border border-slate-700/80 space-y-3 animate-fade-in text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Saldo Disponible en tu Cuenta:</span>
-                <span className="font-mono font-bold text-white text-sm">${(currentUser.balance || 0).toFixed(2)} USD</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-300">Valor de la Campaña:</span>
-                <span className="font-mono font-bold text-primary-light text-sm">-${totalInvestment.toFixed(2)} USD</span>
-              </div>
-              <div className="border-t border-slate-800 pt-2 flex justify-between">
-                <span className="text-slate-400">Saldo Restante tras publicar:</span>
-                <span className="font-mono font-bold text-emerald-400">
-                  ${Math.max(0, (currentUser.balance || 0) - totalInvestment).toFixed(2)} USD
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Botones de Navegación y Pago */}
-          <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={() => setStep(3)}>
-              Atrás
+          {/* Botones de Navegación y Acción Final Destacada */}
+          <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+            <Button variant="outline" size="sm" onClick={() => setStep(3)}>
+              <ArrowLeft className="w-4 h-4 mr-1.5" /> Volver a Preguntas
             </Button>
             <Button
               size="lg"
               variant="primary"
               disabled={isFinancing}
               onClick={handlePublishAndFinance}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black hover:opacity-90 shadow-lg shadow-emerald-500/20 text-xs sm:text-sm"
+              className={`font-black text-xs sm:text-sm border-0 shadow-xl ${
+                paymentMethod === 'kushki'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 hover:opacity-95'
+                  : paymentMethod === 'deuna'
+                  ? 'bg-gradient-to-r from-yellow-400 to-emerald-400 text-slate-950 hover:opacity-95'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:opacity-95'
+              }`}
             >
               {isFinancing ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  Procesando Pago con Pasarela Bancaria...
+                  Activando Campaña y Procesando Fondos...
                 </span>
-              ) : paymentMethod === 'card' ? (
-                `Pagar $${totalInvestment.toFixed(2)} USD con Tarjeta y Activar 🚀`
-              ) : paymentMethod === 'transfer' ? (
-                `Registrar Transferencia y Activar Campaña 🚀`
+              ) : paymentMethod === 'balance' ? (
+                `Activar con mi Saldo Disponible ($${totalInvestment.toFixed(2)} USD) 🚀`
+              ) : paymentMethod === 'kushki' ? (
+                `Pagar $${totalInvestment.toFixed(2)} USD con Kushki y Activar 🚀`
+              ) : paymentMethod === 'deuna' ? (
+                `Confirmar Pago DeUna! y Activar Campaña 🚀`
               ) : (
-                `Debitar $${totalInvestment.toFixed(2)} USD y Activar Campaña 🚀`
+                `Registrar Transferencia y Activar Campaña 🚀`
               )}
             </Button>
           </div>
